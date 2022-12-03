@@ -1,0 +1,15 @@
+CREATE OR REPLACE TABLE day01 (
+    elf     INTEGER NOT NULL,
+    food    INTEGER NOT NULL
+)
+STAGE_FILE_FORMAT = ( TYPE = CSV );
+
+PUT file://&{input_file} @%day01 
+    OVERWRITE = true;
+
+COPY INTO day01 
+    FILE_FORMAT = (
+        TYPE = CSV   
+        SKIP_HEADER = 1
+    );
+
