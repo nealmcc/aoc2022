@@ -1,0 +1,28 @@
+// load items and their priorities:
+create or replace transient table day03_items (
+    id        char not null primary key,
+    priority  int  not null
+) 
+stage_file_format = ( type = CSV );
+
+put file://&{input_items} @%day03_items 
+    overwrite = true;
+
+copy into day03_items 
+    file_format = ( skip_header = 1 );
+
+
+// load puzzle input:
+// note that snowflake string values are case sensitive by default:
+create or replace transient table day03_bags (
+    id     int autoincrement start 1 increment 1,
+    items  varchar not null
+) 
+stage_file_format = ( type = CSV );
+
+put file://&{input_bags} @%day03_bags
+    overwrite = true;
+
+copy into day03_bags (items) 
+    from ( select $1 from @%day03_bags );
+

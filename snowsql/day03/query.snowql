@@ -1,0 +1,24 @@
+/** 
+ * part 1:
+ * In the two halves of each bag, 
+ * there exists exactly one item that is in both halves.
+ *
+ * Find the sum of the priorities of those items:
+*/
+with bags as (
+  select
+      id,
+      substring(items, 1, len(items)/2) as half1,
+      substring(items, len(items)/2+1) as half2
+  from
+      day03_bags
+)
+select
+    sum(items.priority) as part1
+from
+    bags
+    inner join day03_items as items
+        on contains(bags.half1, items.id)
+        and contains(bags.half2, items.id);
+
+
