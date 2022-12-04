@@ -21,4 +21,27 @@ from
         on contains(bags.half1, items.id)
         and contains(bags.half2, items.id);
 
-
+/** 
+ * part 2:
+ * In each group of 3 bags (1,2,3), (4,5,6), ...
+ * there exists exactly one item that is in all three bags.
+ *
+ * Find the sum of the priorities of those items:
+*/
+with bags as (
+    select
+        ceil(id/3) as grp,
+        rank() over (partition by grp order by id) as rank1,
+        items
+    from
+        day03_bags
+)
+select
+    sum(items.priority) as part2
+from
+    bags pivot ( max(items) for rank1 in (1, 2, 3) ) 
+        as g (grp, first, second, third)
+    inner join day03_items as items
+        on contains(g.first, items.id)
+        and contains(g.second, items.id)
+        and contains(g.third, items.id)
