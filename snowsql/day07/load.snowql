@@ -1,0 +1,12 @@
+create or replace transient table day07 (
+    parent varchar,
+    name   varchar not null,
+    size   int
+)
+stage_file_format = ( type = CSV );
+
+put file://&{input_file} @%day07
+    overwrite = true;
+
+copy into day07
+    file_format = ( skip_header = 1 );

@@ -1,0 +1,85 @@
+with dirs as (
+    select 
+        '/' as id,
+        '/' as name,
+        null as parent
+    union all
+    select
+        case when parent = '/' then '' else parent end || '/' || name || '/' as id,
+        name,
+        case when parent ='/' then '/' else parent || '/' end as parent
+    from day07
+        where size is null
+), 
+files as (
+    select
+        name,
+        case when parent = '/' then '/' else parent || '/' end as parent,
+        size
+    from day07
+        where size is not null
+),
+ds as (
+    select 
+        d.id,
+        d.parent,
+        sum (nvl(f.size, 0)) as size
+    from
+        dirs d full join files f
+            on d.id = f.parent
+    group by
+        d.id, d.parent
+),
+cte as (
+    select
+        id, parent, size
+    from ds
+    where parent is null
+    UNION ALL
+    select
+        ds.id, ds.parent, ds.size
+    from 
+        ds join cte as c on ds.parent = c.id
+), 
+totalsizes as (
+    select 
+        c1.id, 
+        c1.parent, 
+        c1.size, 
+        c1.size + sum(nvl(c2.size, 0)) as size_with_children
+    from 
+        cte c1
+        left outer join cte c2 
+            on c1.id <> c2.id
+            and left(c2.id, len(c1.id)) = c1.id
+    group by c1.id, c1.parent, c1.size
+),
+part1 as (
+    select sum(size_with_children) as p1
+    from totalsizes
+    where size_with_children <= 100000
+),
+part2_calc as (
+    select 
+        70000000 as capacity,
+        sum(size) as used,
+        capacity - used as free,
+        30000000 as minimum,
+        minimum - free as delete_amount
+    from
+        totalsizes as ts
+),
+part2 as (
+    select
+        size_with_children as p2
+    from 
+        totalsizes ts
+    where
+        size_with_children >= ( select delete_amount from part2_calc )
+    order by size_with_children asc
+    limit 1
+)
+select 
+    p1, p2
+from 
+    part1 join part2;
