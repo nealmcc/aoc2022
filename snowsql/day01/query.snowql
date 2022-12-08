@@ -1,15 +1,14 @@
-with top3 as (
+WITH top3 AS (
 	SELECT 
-		elf, sum(food) as calories
+		elf, sum(food) AS calories
 	FROM 
 		day01
 	GROUP BY (elf)
 	ORDER BY (calories) DESC
 	LIMIT 3
 )
-select 
-	max(calories) as part1,
-	sum(calories) as part2
-from top3;
-
+SELECT 
+	max(calories) AS part1,
+	sum(calories) AS part2
+FROM top3;
 

@@ -15,5 +15,5 @@ load: input.txt items.csv
 		-D input_bags=$(current_dir)input.txt
 	touch load
 
-query: load
+query: load query.snowql
 	snowsql -c aoc2022 -f query.snowql
