@@ -23,18 +23,26 @@ func main() {
 		log.Fatal(err)
 	}
 
-	p1 := forest.Visibility()
-
+	p1 := part1(forest)
 	middle := time.Now()
+	p2 := part2(forest)
+	end := time.Now()
 
-	// p2, err := part2(data)
-	// if err != nil {
-	// 	log.Fatalf("part2: %s", err)
-	// }
-	// end := time.Now()
+	fmt.Printf("part 1: %d in %s\n", p1, middle.Sub(start))
+	fmt.Printf("part 2: %d in %s\n", p2, end.Sub(middle))
+}
 
-	fmt.Printf("part 1: %d in %s\n", len(p1), middle.Sub(start))
-	// fmt.Printf("part 2: %d in %s\n", p2, end.Sub(middle))
+// Visibility counts the number of trees in the forest that are visible from
+// outside the forest.  A tree is visible from a given direction if all of the
+// other trees between it and an edge of the grid are shorter than it.
+func part1(f Forest) int {
+	return len(f.Visibility())
+}
+
+// part2 returns the largest scene score from the forest
+func part2(f Forest) int {
+	_, sc := f.SceneScore()
+	return sc
 }
 
 // Forest is a grid of trees. Each tree has a height in the range ['0','9'].
@@ -48,9 +56,7 @@ func NewForest(r io.Reader) (Forest, error) {
 	for s.Scan() {
 		b := s.Bytes()
 		vals := make([]byte, len(b))
-		for i, ch := range b {
-			vals[i] = ch - '0'
-		}
+		copy(vals, b)
 		g = append(g, vals)
 	}
 
@@ -61,37 +67,40 @@ func NewForest(r io.Reader) (Forest, error) {
 	return g, nil
 }
 
-func (f Forest) Size() (int, int) {
-	height := len(f)
-	if height == 0 {
-		return 0, 0
-	}
-	width := len(f[0])
-	return width, height
-}
-
-// Visibility returns a 2d bitmask showing the directions that each tree is
-// visible from. A tree is visible from a given direction if all of the other trees
-// between it and an edge of the grid are shorter than it.
-//
-// In the resulting Mask, each coordinate will contain the bitwise AND of
-// each of the four Directions.
 func (f Forest) Visibility() Mask {
-	vis := make(Mask)
+	visibleTrees := make(Mask)
 
 	for r := 0; r < len(f); r++ {
 		for c := 0; c < len(f[r]); c++ {
 			pos := Pos{Row: r, Col: c}
-			if dirs := f.VisibilityAt(pos); dirs > 0 {
-				vis[pos] = dirs
+			if dirs := f.visibilityAt(pos); dirs > 0 {
+				visibleTrees[pos] = dirs
 			}
 		}
 	}
 
-	return vis
+	return visibleTrees
 }
 
-func (f Forest) VisibilityAt(pos Pos) Direction {
+// SceneScore returns the best scene score in the forest.
+func (f Forest) SceneScore() (Pos, int) {
+	var best Pos
+	max := 0
+
+	for r := 0; r < len(f); r++ {
+		for c := 0; c < len(f[r]); c++ {
+			pos := Pos{Row: r, Col: c}
+			if sc := f.sceneScoreAt(pos); sc > max {
+				best = pos
+				max = sc
+			}
+		}
+	}
+
+	return best, max
+}
+
+func (f Forest) visibilityAt(pos Pos) Direction {
 	vis := top + bottom + right + left
 	height := f[pos.Row][pos.Col]
 
@@ -128,4 +137,52 @@ func (f Forest) VisibilityAt(pos Pos) Direction {
 	}
 
 	return vis
+}
+
+// sceneScoreAt returns the scene score for the given position.
+func (f Forest) sceneScoreAt(pos Pos) int {
+	sc := 1
+	height := f[pos.Row][pos.Col]
+
+	// number of trees visible to the top:
+	count := 0
+	for r, c := pos.Row-1, pos.Col; r >= 0; r-- {
+		count++
+		if f[r][c] >= height {
+			break
+		}
+	}
+	sc *= count
+
+	// number of trees visible to the right:
+	count = 0
+	for r, c := pos.Row, pos.Col+1; c < len(f[r]); c++ {
+		count++
+		if f[r][c] >= height {
+			break
+		}
+	}
+	sc *= count
+
+	// number of trees visible to the bottom:
+	count = 0
+	for r, c := pos.Row+1, pos.Col; r < len(f); r++ {
+		count++
+		if f[r][c] >= height {
+			break
+		}
+	}
+	sc *= count
+
+	// number of trees visible to the left:
+	count = 0
+	for r, c := pos.Row, pos.Col-1; c >= 0; c-- {
+		count++
+		if f[r][c] >= height {
+			break
+		}
+	}
+	sc *= count
+
+	return sc
 }
