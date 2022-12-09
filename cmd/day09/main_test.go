@@ -14,7 +14,8 @@ R 4
 D 1
 L 5
 R 2`
-	got, err := solve(strings.NewReader(sample), 2)
+
+	got, err := solve(strings.NewReader(sample), 2, "sample1")
 	if err != nil {
 		t.Log(err)
 		t.Fail()
@@ -37,7 +38,7 @@ D 10
 L 25
 U 20`
 
-	got, err := solve(strings.NewReader(sample), 10)
+	got, err := solve(strings.NewReader(sample), 10, "sample2")
 	if err != nil {
 		t.Log(err)
 		t.Fail()

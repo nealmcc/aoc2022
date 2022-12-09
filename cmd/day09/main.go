@@ -23,14 +23,16 @@ func main() {
 
 	start := time.Now()
 
-	p1, err := solve(file, 2)
+	p1, err := solve(file, 2, "part1")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	middle := time.Now()
+
 	file.Seek(0, io.SeekStart)
-	p2, err := solve(file, 10)
+
+	p2, err := solve(file, 10, "part2")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -41,11 +43,10 @@ func main() {
 }
 
 // solve solves both part 1 and part 2
-func solve(r io.Reader, n int) (int, error) {
-	log := &logger{
-		tailPositions: make(map[v.Point]struct{}),
-	}
-	rope := rope.New(n, log)
+func solve(r io.Reader, n int, imagePrefix string) (int, error) {
+	log := &logger{tailPositions: make(map[v.Point]struct{})}
+	trace := newTracer(imagePrefix)
+	rope := rope.New(n, tee(log, trace))
 
 	s := bufio.NewScanner(r)
 	line := 0
@@ -67,6 +68,7 @@ func solve(r io.Reader, n int) (int, error) {
 		return 0, err
 	}
 
+	trace.Save()
 	return len(log.tailPositions), nil
 }
 
