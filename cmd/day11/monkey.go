@@ -11,12 +11,9 @@ type Monkey struct {
 	id            int
 	items         *collection.Queue[Item]
 	test          testFunc
-	op            inspectFunc
+	inspect       inspectFunc
 	mTrue, mFalse *Monkey
 }
-
-// Item represents an item as its current worry level.
-type Item = int
 
 // LogFunc is a function that records each time a monkey inspects an item.
 type LogFunc func(id int, item Item)
@@ -33,11 +30,11 @@ func (m *Monkey) Turn(log LogFunc) {
 	for m.items.Len() > 0 {
 		x, _ := m.items.Pop()
 		log(m.id, x)
-		x = m.op(x) / 3
+		x = m.inspect(x)
 		if m.test(x) {
-			m.mTrue.catch(x)
+			m.mTrue.items.Push(x)
 		} else {
-			m.mFalse.catch(x)
+			m.mFalse.items.Push(x)
 		}
 	}
 }
@@ -53,15 +50,11 @@ func (m *Monkey) String() string {
 	return fmt.Sprintf("%v", m)
 }
 
-// catch asks this monkey to catch the given item.
-func (m *Monkey) catch(x Item) {
-	m.items.Push(x)
-}
-
 // Troop is a group of Monkeys.
 type Troop []Monkey
 
-// Round processes one turn for each monkey in the Troop.
+// Round processes one turn for each monkey in the Troop, using the given log
+// function to record each time a monkey inspects an item.
 func (t Troop) Round(log LogFunc) {
 	for _, m := range t {
 		m.Turn(log)
@@ -70,28 +63,34 @@ func (t Troop) Round(log LogFunc) {
 
 // times generates a monkey operation that multiples an item's worry level.
 func times(n int) inspectFunc {
-	return func(x Item) Item { return x * n }
+	return func(x Item) Item {
+		return reduce(Item{
+			div: n * x.div,
+			mod: n * x.mod,
+		})
+	}
 }
 
 // plus generates a monkey operation that adds to an item's worry level.
 func plus(n int) inspectFunc {
-	return func(x Item) Item { return x + n }
+	return func(x Item) Item {
+		return reduce(Item{
+			div: x.div,
+			mod: x.mod + n,
+		})
+	}
 }
 
-// power generates a monkey operation that exponentiates an item's worry level.
-// Works with powers >= 0. Does not check for overflow.
-func power(n int) inspectFunc {
-	return func(x Item) Item {
-		pow := 1
-		for i := 0; i < n; i++ {
-			pow *= x
-		}
-		return pow
-	}
+// square is an inspectFunc that multiples the value of the item by itself.
+func square(x Item) Item {
+	return reduce(Item{
+		div: x.div*x.div + 2*x.div*x.mod,
+		mod: x.mod * x.mod,
+	})
 }
 
 // divisible generates a monkey test function to see if the item's worry level
 // is evenly divisible by n.
 func divisible(n int) testFunc {
-	return func(x Item) bool { return x%n == 0 }
+	return func(x Item) bool { return x.mod%n == 0 }
 }
