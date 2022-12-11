@@ -6,6 +6,11 @@ type Queue[T any] struct {
 	data []T
 }
 
+// NewQueue initializes a new queue using the given data.
+func NewQueue[T any](data ...T) *Queue[T] {
+	return &Queue[T]{data: data}
+}
+
 // Len returns the number of items in this queue.
 func (q *Queue[T]) Len() int {
 	return len(q.data)
@@ -13,7 +18,7 @@ func (q *Queue[T]) Len() int {
 
 // Push the given item to the back of the queue.
 func (q *Queue[T]) Push(x T) {
-	q.data = append(q.data, x)
+	(*q).data = append(q.data, x)
 }
 
 // Pop returns the front item from the queue, and true iff there is an item.

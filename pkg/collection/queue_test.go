@@ -4,6 +4,15 @@ import (
 	"testing"
 )
 
+func TestNewQueue(t *testing.T) {
+	q := NewQueue(1, 2, 3)
+	length := q.Len()
+	if length != 3 {
+		t.Logf("s.Len() = %d ; want %d", length, 3)
+		t.Fail()
+	}
+}
+
 func TestQueue_Len(t *testing.T) {
 	q := Queue[int]{}
 
@@ -19,6 +28,15 @@ func TestQueue_Len(t *testing.T) {
 	got := q.Len()
 	if got != 3 {
 		t.Logf("s.Len() = %d ; want %d", got, 3)
+		t.Fail()
+	}
+
+	q.Pop()
+	q.Pop()
+	q.Pop()
+	got = q.Len()
+	if got != 0 {
+		t.Logf("s.Len() = %d ; want %d", got, 0)
 		t.Fail()
 	}
 }
