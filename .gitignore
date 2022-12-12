@@ -1,6 +1,7 @@
 # test and benchmark output:
 *.out
 *.prof
+*.test
 
 # pprof output:
 *.svg
