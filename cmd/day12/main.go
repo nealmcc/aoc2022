@@ -174,9 +174,7 @@ func part2(g grid) int {
 	pointers := make([]*pq.Node, g.size*g.size)
 	const infinity = 1<<63 - 1
 	for pos, height := range g.terrain {
-		if height == 'a' {
-			dist[pos] = 0
-		} else {
+		if height != 'a' {
 			dist[pos] = infinity
 		}
 		node := &pq.Node{Value: pos, Priority: -1 * dist[pos]}

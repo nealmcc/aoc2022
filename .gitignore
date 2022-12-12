@@ -1,5 +1,10 @@
+# test and benchmark output:
 *.out
 *.prof
+
+# pprof output:
+*.svg
+*.pdf
 
 *.log
 *.log_bootstrap
