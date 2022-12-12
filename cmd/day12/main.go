@@ -30,11 +30,11 @@ func main() {
 
 	p1 := part1(hill)
 	middle := time.Now()
-	// p2 := part2(hill)
-	// end := time.Now()
+	p2 := part2(hill)
+	end := time.Now()
 
 	fmt.Printf("part 1: %d in %s\n", p1, middle.Sub(start))
-	// fmt.Printf("part 2: %d in %s\n", p2, end.Sub(middle))
+	fmt.Printf("part 2: %d in %s\n", p2, end.Sub(middle))
 }
 
 // read the terrain from the given input.
@@ -134,9 +134,57 @@ func part1(g grid) int {
 	// the first node that we definitely know the distance to is the start.
 	// It has the highest priority (0 - all others are negative) so we pop it
 	// off the queue, and find the distance to all adjacent nodes.
-	// We keep working out from the next nearest node until all nodes have a defined cost.
-	// Since we cannot climb up a height difference of more than one, we treat
-	// the incremental cost of such a climb as infinity.
+	// We keep working out from the next nearest node until all nodes have a defined distance.
+	for q.Len() > 0 {
+		n := heap.Pop(q).(*pq.Node)
+		currPos, currTotal := n.Value, n.Priority*-1
+
+		for _, next := range g.neighbours(currPos) {
+			currHeight := g.terrain[currPos]
+			nextHeight := g.terrain[next]
+
+			if nextHeight > currHeight+1 {
+				// too steep - try another way.
+				continue
+			}
+
+			// the distance from start to next, if we arrive via curr:
+			alt := currTotal + 1
+			if alt < dist[next] {
+				dist[next] = alt
+				p := pointers[next.X*g.size+next.Y]
+				q.Update(p, p.Value, -1*alt)
+			}
+		}
+	}
+
+	return dist[g.end]
+}
+
+// part2 computes the shortest distance from any point with elevation 'a',
+// to the grid's end point, assuming you an only climb 1 height per step.
+// Uses Dijkstra's Algorithm.
+func part2(g grid) int {
+	dist := make(map[twod.Point]int, len(g.terrain))
+	dist[g.start] = 0
+
+	// push each node on the graph into the queue, with an initial distance
+	q := new(pq.Queue)
+	// save a pointer to each node, so we can update it in the queue
+	pointers := make([]*pq.Node, g.size*g.size)
+	const infinity = 1<<63 - 1
+	for pos, height := range g.terrain {
+		if height == 'a' {
+			dist[pos] = 0
+		} else {
+			dist[pos] = infinity
+		}
+		node := &pq.Node{Value: pos, Priority: -1 * dist[pos]}
+		pointers[pos.X*g.size+pos.Y] = node
+		heap.Push(q, node)
+	}
+
+	// Working out from the next nearest node until all nodes have a defined cost.
 	for q.Len() > 0 {
 		n := heap.Pop(q).(*pq.Node)
 		currPos, currTotal := n.Value, n.Priority*-1
