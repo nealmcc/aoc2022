@@ -31,6 +31,16 @@ func (a Point) Times(n int) Point {
 	}
 }
 
+// Neighbours4 returns the four points adjacent to this one.
+func (p Point) Neighbours4() []Point {
+	return []Point{
+		{X: p.X, Y: p.Y - 1},
+		{X: p.X, Y: p.Y + 1},
+		{X: p.X - 1, Y: p.Y},
+		{X: p.X + 1, Y: p.Y},
+	}
+}
+
 // Reduce returns the shortest vector with the same slope as this one
 // that can still be represented with integer values for X and Y.
 // Also returns the largest positive integer that evenly divides this one.
