@@ -45,44 +45,48 @@ func TestRead(t *testing.T) {
 	a := assert.New(t)
 	a.Equal(8, len(pairs))
 	a.Equal(data{
-		[]any{1.0, 1.0, 3.0, 1.0, 1.0},
-		[]any{1.0, 1.0, 5.0, 1.0, 1.0},
+		data{1.0, 1.0, 3.0, 1.0, 1.0},
+		data{1.0, 1.0, 5.0, 1.0, 1.0},
 	}, pairs[0])
 }
 
-// func TestPart1(t *testing.T) {
-// 	t.Parallel()
+func TestPart1(t *testing.T) {
+	t.Parallel()
 
-// 	lines, err := read(strings.NewReader(_sample))
-// 	if err != nil {
-// 		t.Log("error reading sample", err)
-// 		t.FailNow()
-// 	}
-// 	pairs := makePairs(lines)
+	lines, err := read(strings.NewReader(_sample))
+	if err != nil {
+		t.Log("error reading sample", err)
+		t.FailNow()
+	}
 
-// 	got, want := part1(pairs), 13
-// 	if got != want {
-// 		t.Logf("part1() =  %d; want %d", got, want)
-// 		t.Fail()
-// 	}
-// }
+	got, want := part1(lines), 13
+	if got != want {
+		t.Logf("part1() =  %d; want %d", got, want)
+		t.Fail()
+	}
+}
 
-// func TestPart2(t *testing.T) {
-// 	t.Parallel()
+func TestPart2(t *testing.T) {
+	t.Parallel()
 
-// 	hill, err := read(strings.NewReader(_sample))
-// 	if err != nil {
-// 		t.Log("error reading sample", err)
-// 		t.FailNow()
-// 	}
+	lines, err := read(strings.NewReader(_sample))
+	if err != nil {
+		t.Log("error reading sample", err)
+		t.FailNow()
+	}
 
-// 	got, want := part2(hill), 29
+	got, err := part2(lines)
+	if err != nil {
+		t.Log("error in part 2", err)
+		t.FailNow()
+	}
 
-// 	if got != want {
-// 		t.Logf("part2() =  %d; want %d", got, want)
-// 		t.Fail()
-// 	}
-// }
+	want := 140
+	if got != want {
+		t.Logf("part2() =  %d; want %d", got, want)
+		t.Fail()
+	}
+}
 
 // var _result int // prevent the compiler from optimising away the call.
 
