@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bytes"
-
-	"github.com/nealmcc/aoc2022/pkg/vector/twod"
+	v "github.com/nealmcc/aoc2022/pkg/vector/twod"
 )
 
 // Material represents the contents of a given square in a cavern.
@@ -25,13 +23,13 @@ type Cavern struct {
 }
 
 // Get the material at the given point, if any.
-func (c *Cavern) Get(p twod.Point) (Material, bool) {
+func (c *Cavern) Get(p v.Point) (Material, bool) {
 	m, ok := c.grid[p.X][p.Y]
 	return m, ok
 }
 
 // Place the given material into the cavern.
-func (c *Cavern) Set(p twod.Point, m Material) {
+func (c *Cavern) Set(p v.Point, m Material) {
 	if c.grid == nil {
 		c.grid = make(map[int]map[int]Material, 8)
 	}
@@ -52,17 +50,17 @@ func (c *Cavern) Set(p twod.Point, m Material) {
 // The sand will fall until it (possibly) comes to rest.
 // Returns the position where the sand comes to rest, or false if
 // it will fall forever, or block the entry point.
-func (c *Cavern) DropSand(src twod.Point) (twod.Point, bool) {
+func (c *Cavern) DropSand(src v.Point) (v.Point, bool) {
 	p := src
 	var (
-		down      = twod.Point{Y: 1}
-		downleft  = twod.Point{X: -1, Y: 1}
-		downright = twod.Point{X: 1, Y: 1}
+		down      = v.Point{Y: 1}
+		downleft  = v.Point{X: -1, Y: 1}
+		downright = v.Point{X: 1, Y: 1}
 	)
 
 	for {
 		if p.Y >= c.lowest {
-			return twod.Point{}, false
+			return v.Point{}, false
 		}
 
 		if _, full := c.Get(p.Add(down)); !full {
@@ -97,28 +95,4 @@ func (c *Cavern) Count(m Material) int {
 		}
 	}
 	return sum
-}
-
-// Render the given portion of this cavern as a1 string.
-// The portion that will be rendered will include (x1, y1) at the top left,
-// and will *exclude* (x2, y2) in the bottom right
-func (c *Cavern) Render(x1, y1, x2, y2 int) string {
-	height := y2 - y1
-	width := x2 - x1
-	rows := make([][]byte, height)
-	for r := 0; r < height; r++ {
-		row := make([]byte, width)
-		for k := 0; k < width; k++ {
-			switch mat := c.grid[x1+k][y1+r]; mat {
-			case Air:
-				row[k] = '.'
-			case Sand:
-				row[k] = 'o'
-			case Rock:
-				row[k] = '#'
-			}
-		}
-		rows[r] = row
-	}
-	return string(bytes.Join(rows, []byte{'\n'}))
 }
