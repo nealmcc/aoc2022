@@ -1,10 +1,37 @@
 // Package twod models two-dimension vectors.
 package twod
 
+import (
+	"bytes"
+	"errors"
+	"fmt"
+	"strconv"
+)
+
 // Point is a 2-dimensional integer coordinate.
 type Point struct {
 	X int
 	Y int
+}
+
+// parse the given text in the form x,y as a point.
+// The text must have two numbers separated by a comma.
+func (p *Point) Parse(b []byte) error {
+	parts := bytes.Split(b, []byte{','})
+	if len(parts) != 2 {
+		return errors.New("parse requires two parts")
+	}
+
+	var err error
+	if (*p).X, err = strconv.Atoi(string(parts[0])); err != nil {
+		return fmt.Errorf("invalid value for x: %w", err)
+	}
+
+	if (*p).Y, err = strconv.Atoi(string(parts[1])); err != nil {
+		return fmt.Errorf("invalid value for y: %w", err)
+	}
+
+	return nil
 }
 
 // Add returns the vector sum of a + b.
