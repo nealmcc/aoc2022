@@ -100,6 +100,16 @@ func (a Point) Reduce() (Point, int) {
 	}, scale
 }
 
+func ManhattanLength(p Point) int {
+	if p.X < 0 {
+		p.X *= -1
+	}
+	if p.Y < 0 {
+		p.Y *= -1
+	}
+	return p.X + p.Y
+}
+
 // gcd calculates the greatest common divisor of a and b.
 func gcd(a, b int) int {
 	for b != 0 {
