@@ -2,6 +2,8 @@ package main
 
 import "fmt"
 
+// Valve is one node in a network. Each Valve has a unique ID, some neighbours,
+// and a flow rate of "pressure per minute" that it can release.
 type Valve struct {
 	ID         ValveID
 	Flow       int
