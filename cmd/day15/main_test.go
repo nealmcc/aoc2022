@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -110,4 +111,23 @@ func TestPart2(t *testing.T) {
 		t.Logf("part2() = %d; want %d", got, want)
 		t.Fail()
 	}
+}
+
+var _result int // prevent the compiler from optimising away the call.
+
+func BenchmarkPart2(b *testing.B) {
+	file, err := os.Open("input.txt")
+	if err != nil {
+		b.Fatal(err)
+	}
+	sensors, err := read(file)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	var result int
+	for n := 0; n < b.N; n++ {
+		result = part2(sensors, 4000000)
+	}
+	_result = result
 }
