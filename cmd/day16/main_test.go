@@ -6,7 +6,6 @@ import (
 )
 
 func TestPart1(t *testing.T) {
-	t.Skip("not ready yet")
 	t.Parallel()
 
 	valves, err := read(strings.NewReader(_sample))
@@ -15,7 +14,7 @@ func TestPart1(t *testing.T) {
 		t.FailNow()
 	}
 
-	got, want := part1(valves, 30), 1651
+	got, want := part1(valves), 1651
 	if got != want {
 		t.Logf("part1() = %d; want %d", got, want)
 		t.Fail()
