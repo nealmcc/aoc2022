@@ -1,4 +1,4 @@
-package collection
+package prioqueue
 
 import (
 	"container/heap"
@@ -11,8 +11,8 @@ import (
 	v "github.com/nealmcc/aoc2022/pkg/vector/twod"
 )
 
-func TestPrioQueue_pushAndLen(t *testing.T) {
-	q := make(PrioQueue[v.Point], 0)
+func TestQueue_pushAndLen(t *testing.T) {
+	q := make(Queue[v.Point], 0)
 
 	nodes := []*Node[v.Point]{
 		{
@@ -36,7 +36,7 @@ func TestPrioQueue_pushAndLen(t *testing.T) {
 	require.Equal(t, 3, q.Len())
 }
 
-func TestPrioQueue_initAndPop(t *testing.T) {
+func TestQueue_initAndPop(t *testing.T) {
 	nodes := []*Node[v.Point]{
 		{
 			Value:    v.Point{X: 4, Y: 2},
@@ -52,7 +52,7 @@ func TestPrioQueue_initAndPop(t *testing.T) {
 		},
 	}
 
-	q := PrioQueue[v.Point](nodes)
+	q := Queue[v.Point](nodes)
 	fmt.Println(q)
 
 	heap.Init(&q)
@@ -69,14 +69,14 @@ func TestPrioQueue_initAndPop(t *testing.T) {
 	assert.Equal(t, 42, node.Priority)
 }
 
-func ExamplePrioQueue_Update() {
+func ExampleQueue_Update() {
 	items := map[v.Point]int{
 		{X: 4, Y: 2}: 42,
 		{X: 6, Y: 7}: 67,
 		{X: 0, Y: 0}: 0,
 	}
 
-	q := new(PrioQueue[v.Point])
+	q := new(Queue[v.Point])
 	for val, prio := range items {
 		heap.Push(q, &Node[v.Point]{Value: val, Priority: prio})
 	}

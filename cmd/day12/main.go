@@ -10,7 +10,7 @@ import (
 	"os"
 	"time"
 
-	coll "github.com/nealmcc/aoc2022/pkg/collection"
+	pq "github.com/nealmcc/aoc2022/pkg/collection/prioqueue"
 	v "github.com/nealmcc/aoc2022/pkg/vector/twod"
 )
 
@@ -118,15 +118,15 @@ func part1(g grid) int {
 	dist[g.start] = 0
 
 	// push each node on the graph into the queue, with an initial distance
-	q := new(coll.PrioQueue[v.Point])
+	q := new(pq.Queue[v.Point])
 	// save a pointer to each node, so we can update it in the queue
-	pointers := make([]*coll.Node[v.Point], g.size*g.size)
+	pointers := make([]*pq.Node[v.Point], g.size*g.size)
 	const infinity = 1<<63 - 1
 	for pos := range g.terrain {
 		if pos != g.start {
 			dist[pos] = infinity
 		}
-		node := &coll.Node[v.Point]{Value: pos, Priority: -1 * dist[pos]}
+		node := &pq.Node[v.Point]{Value: pos, Priority: -1 * dist[pos]}
 		pointers[pos.X*g.size+pos.Y] = node
 		heap.Push(q, node)
 	}
@@ -136,7 +136,7 @@ func part1(g grid) int {
 	// off the queue, and find the distance to all adjacent nodes.
 	// We keep working out from the next nearest node until all nodes have a defined distance.
 	for q.Len() > 0 {
-		n := heap.Pop(q).(*coll.Node[v.Point])
+		n := heap.Pop(q).(*pq.Node[v.Point])
 		currPos, currTotal := n.Value, n.Priority*-1
 
 		for _, next := range g.neighbours(currPos) {
@@ -169,22 +169,22 @@ func part2(g grid) int {
 	dist[g.start] = 0
 
 	// push each node on the graph into the queue, with an initial distance
-	q := new(coll.PrioQueue[v.Point])
+	q := new(pq.Queue[v.Point])
 	// save a pointer to each node, so we can update it in the queue
-	pointers := make([]*coll.Node[v.Point], g.size*g.size)
+	pointers := make([]*pq.Node[v.Point], g.size*g.size)
 	const infinity = 1<<63 - 1
 	for pos, height := range g.terrain {
 		if height != 'a' {
 			dist[pos] = infinity
 		}
-		node := &coll.Node[v.Point]{Value: pos, Priority: -1 * dist[pos]}
+		node := &pq.Node[v.Point]{Value: pos, Priority: -1 * dist[pos]}
 		pointers[pos.X*g.size+pos.Y] = node
 		heap.Push(q, node)
 	}
 
 	// Working out from the next nearest node until all nodes have a defined cost.
 	for q.Len() > 0 {
-		n := heap.Pop(q).(*coll.Node[v.Point])
+		n := heap.Pop(q).(*pq.Node[v.Point])
 		currPos, currTotal := n.Value, n.Priority*-1
 
 		for _, next := range g.neighbours(currPos) {
