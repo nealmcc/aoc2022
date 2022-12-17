@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -38,7 +39,7 @@ func TestNewGraph(t *testing.T) {
 		t.FailNow()
 	}
 
-	routes := NewGraph(valves)
+	graph := NewGraph(valves)
 	// here we don't check the 'previous' value, because in the case of a cycle,
 	// there is more than one valid route.
 	want := Graph{
@@ -96,11 +97,64 @@ func TestNewGraph(t *testing.T) {
 
 	for k1, v1 := range want {
 		for k2, v2 := range v1 {
-			got := routes[k1][k2].Dist
+			got := graph[k1][k2].Dist
 			if got != v2.Dist {
 				t.Logf("route[%v][%v].Dist = %d; want %d", k1, k2, got, v2.Dist)
 				t.Fail()
 			}
 		}
+	}
+}
+
+func TestGraph_Route(t *testing.T) {
+	t.Parallel()
+	valves, err := read(strings.NewReader(_sample))
+	if err != nil {
+		t.Log("error reading sample:", err)
+		t.FailNow()
+	}
+
+	graph := NewGraph(valves)
+
+	tt := []struct {
+		from string
+		to   string
+		want string
+	}{
+		{
+			"AA", "AA",
+			"",
+		},
+		{
+			"AA", "BB",
+			"BB",
+		},
+		{
+			"BB", "AA",
+			"AA",
+		},
+		{
+			"EE", "AA",
+			"DDAA",
+		},
+		{
+			"AA", "GG",
+			"DDEEFFGG",
+		},
+	}
+
+	for _, tc := range tt {
+		tc := tc
+		name := fmt.Sprintf("route from %v to %v", tc.from, tc.to)
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got, _ := graph.Route(ID(tc.from), ID(tc.to))
+
+			if got != tc.want {
+				t.Logf("route(%v, %v) = %s; want %s", tc.from, tc.to, got, tc.want)
+				t.Fail()
+			}
+		})
 	}
 }

@@ -19,6 +19,9 @@ type Valve struct {
 // It is just the two bytes of the string stored side by side in a single value.
 type ValveID uint16
 
+// ValveSet is a set of ValveIDs.
+type ValveSet map[ValveID]struct{}
+
 // ID converts the given two-character string to a valve ID.
 // Input is assumed to be valid (not checked).
 func ID(s string) ValveID {

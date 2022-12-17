@@ -1,81 +1,72 @@
 package main
 
-// Network is the current state of the graph at a given point in time.
+// Network is the state of the graph which remains constant.
 type Network struct {
-	// these values will remain constant throughout the life of the network:
 	v           map[ValveID]*Valve // all valves
-	routes      Graph              // distances between each valve
+	graph       Graph              // distances between each valve
 	maxFlowRate int                // flow if all valves were open
-
-	// these values will all change over time:
-	closed       map[ValveID]struct{} // valves which are still closed
-	curr         ValveID              // current position
-	minute       int                  // elapsed time in minutes
-	totalFlow    int                  // how much flow has accumulated so far
-	currFlowRate int                  // current flow rate based on open valves
 }
 
 // NewNetwork intialises a new network with the given set of valves, which are
 // all assumed to be closed, and the given start position.
-func NewNetwork(valves map[ValveID]*Valve) *Network {
-	net := &Network{
-		v:      valves,
-		curr:   ID("AA"),
-		closed: make(map[ValveID]struct{}, len(valves)/2),
+func NewNetwork(valves map[ValveID]*Valve) Network {
+	n := Network{
+		v:     valves,
+		graph: NewGraph(valves),
 	}
 
-	net.routes = NewGraph(valves)
-
-	for k, v := range valves {
+	for _, v := range valves {
 		if v.Flow != 0 {
-			net.maxFlowRate += v.Flow
-			net.closed[k] = struct{}{}
+			n.maxFlowRate += v.Flow
 		}
 	}
 
-	return net
+	return n
 }
 
-// MissedFlow calculates how much flow was *not* achieved vs all valves being
-// open from the start.
-func (n *Network) MissedFlow() int {
-	return n.minute*n.maxFlowRate - n.totalFlow
-}
+// TransitionMany moves along the given route.
+//
+// The start point (not included in the route) is assumed to be 'AA'
+func (n Network) TransitionMany(route string) state {
+	s := state{
+		curr: ID("AA"),
+	}
+	b := []byte(route)
 
-func copymap[K comparable, V any](m map[K]V) map[K]V {
-	res := make(map[K]V, len(m))
-	for k, v := range m {
-		res[k] = v
+	for len(b) > 0 {
+		next := ID(string(b[:2]))
+		b = b[2:]
+		s = n.TransitionOne(s, next)
 	}
 
-	return res
+	return s
 }
 
-// costPerMinute finds the sum of the opportunity cost for each of the given
-// routes, based on the given state of the network.
-// Uses Dijkstra's algorithm.
-// func TotalCosts(n *Network, routes []Path) (cost map[Path]OppCost) {
-// 	return nil
-// }
-
-// OppCost is the opportunity cost of activating a valve.  This includes the
-// time (in minutes) to move to the valve and open it, and the potential
-// flow that is *not* achieved due to other valves being closed during that time.
-type OppCost struct {
-	minutes int
-	nonFlow int
+// state holds one set of the variable information as a Network changes over time.
+type state struct {
+	curr         ValveID // current position
+	mins         int     // elapsed time in minutes
+	totalFlow    int     // total accumulated flow
+	missedFlow   int     // total accumulated opportunity cost
+	currFlowRate int     // current flow rate based on open valves
 }
 
-// less returns true iff the opportunity cost a (in flow per minute) is less than b
-func less(a, b OppCost) bool {
-	adiv, amod := a.nonFlow/a.minutes, a.nonFlow%a.minutes
-	bdiv, bmod := b.nonFlow/b.minutes, b.nonFlow%b.minutes
+// TransitionOne transitions the network from the given state by moving to the
+// given valve and opening it. This produces another state.
+func (n Network) TransitionOne(s state, next ValveID) state {
+	mins, missRate := n.OppCost(s, next)
+	s.curr = next
+	s.mins += mins
+	s.totalFlow += mins * s.currFlowRate
+	s.missedFlow += mins * missRate
+	s.currFlowRate += n.v[next].Flow
+	return s
+}
 
-	diff := adiv - bdiv
-	if diff != 0 {
-		return diff < 0
-	}
-
-	diff = amod - bmod
-	return diff < 0
+// OppCost measures the opportunity cost of starting in state s, then
+// moving to the given valve and opening it.
+func (n Network) OppCost(s state, to ValveID) (mins int, rate int) {
+	mins = n.graph[s.curr][to].Dist + 1
+	rate = n.maxFlowRate - s.currFlowRate
+	return mins, rate
 }
