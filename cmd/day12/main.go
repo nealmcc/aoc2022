@@ -10,8 +10,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/nealmcc/aoc2022/pkg/vector/twod"
-	pq "github.com/nealmcc/aoc2022/pkg/vector/twod/priorityqueue"
+	coll "github.com/nealmcc/aoc2022/pkg/collection"
+	v "github.com/nealmcc/aoc2022/pkg/vector/twod"
 )
 
 func main() {
@@ -52,7 +52,7 @@ func read(r io.Reader) (grid, error) {
 	hill := newGrid(len(row))
 
 	for x := 0; x < len(row); x++ {
-		if err := hill.Set(twod.Point{X: x, Y: 0}, row[x]); err != nil {
+		if err := hill.Set(v.Point{X: x, Y: 0}, row[x]); err != nil {
 			return grid{}, err
 		}
 	}
@@ -60,7 +60,7 @@ func read(r io.Reader) (grid, error) {
 	for y := 1; s.Scan(); y++ {
 		row := s.Bytes()
 		for x := 0; x < len(row); x++ {
-			if err := hill.Set(twod.Point{X: x, Y: y}, row[x]); err != nil {
+			if err := hill.Set(v.Point{X: x, Y: y}, row[x]); err != nil {
 				return grid{}, err
 			}
 		}
@@ -78,20 +78,20 @@ func read(r io.Reader) (grid, error) {
 // Each position on the map has an elevation from 'a' (lowest) to 'z' (highest).
 type grid struct {
 	size    int
-	start   twod.Point
-	end     twod.Point
-	terrain map[twod.Point]byte
+	start   v.Point
+	end     v.Point
+	terrain map[v.Point]byte
 }
 
 func newGrid(width int) grid {
 	return grid{
 		size:    width,
-		terrain: make(map[twod.Point]byte, width*width),
+		terrain: make(map[v.Point]byte, width*width),
 	}
 }
 
 // Set the elevation of the given coordinate.
-func (g *grid) Set(p twod.Point, b byte) error {
+func (g *grid) Set(p v.Point, b byte) error {
 	switch true {
 	case b == 'S':
 		g.start = p
@@ -114,19 +114,19 @@ func (g *grid) Set(p twod.Point, b byte) error {
 // assuming you an only climb a maximum of 1 height per step.
 // Uses Dijkstra's Algorithm.
 func part1(g grid) int {
-	dist := make(map[twod.Point]int, len(g.terrain))
+	dist := make(map[v.Point]int, len(g.terrain))
 	dist[g.start] = 0
 
 	// push each node on the graph into the queue, with an initial distance
-	q := new(pq.Queue)
+	q := new(coll.PrioQueue[v.Point])
 	// save a pointer to each node, so we can update it in the queue
-	pointers := make([]*pq.Node, g.size*g.size)
+	pointers := make([]*coll.Node[v.Point], g.size*g.size)
 	const infinity = 1<<63 - 1
 	for pos := range g.terrain {
 		if pos != g.start {
 			dist[pos] = infinity
 		}
-		node := &pq.Node{Value: pos, Priority: -1 * dist[pos]}
+		node := &coll.Node[v.Point]{Value: pos, Priority: -1 * dist[pos]}
 		pointers[pos.X*g.size+pos.Y] = node
 		heap.Push(q, node)
 	}
@@ -136,7 +136,7 @@ func part1(g grid) int {
 	// off the queue, and find the distance to all adjacent nodes.
 	// We keep working out from the next nearest node until all nodes have a defined distance.
 	for q.Len() > 0 {
-		n := heap.Pop(q).(*pq.Node)
+		n := heap.Pop(q).(*coll.Node[v.Point])
 		currPos, currTotal := n.Value, n.Priority*-1
 
 		for _, next := range g.neighbours(currPos) {
@@ -165,26 +165,26 @@ func part1(g grid) int {
 // to the grid's end point, assuming you an only climb 1 height per step.
 // Uses Dijkstra's Algorithm.
 func part2(g grid) int {
-	dist := make(map[twod.Point]int, len(g.terrain))
+	dist := make(map[v.Point]int, len(g.terrain))
 	dist[g.start] = 0
 
 	// push each node on the graph into the queue, with an initial distance
-	q := new(pq.Queue)
+	q := new(coll.PrioQueue[v.Point])
 	// save a pointer to each node, so we can update it in the queue
-	pointers := make([]*pq.Node, g.size*g.size)
+	pointers := make([]*coll.Node[v.Point], g.size*g.size)
 	const infinity = 1<<63 - 1
 	for pos, height := range g.terrain {
 		if height != 'a' {
 			dist[pos] = infinity
 		}
-		node := &pq.Node{Value: pos, Priority: -1 * dist[pos]}
+		node := &coll.Node[v.Point]{Value: pos, Priority: -1 * dist[pos]}
 		pointers[pos.X*g.size+pos.Y] = node
 		heap.Push(q, node)
 	}
 
 	// Working out from the next nearest node until all nodes have a defined cost.
 	for q.Len() > 0 {
-		n := heap.Pop(q).(*pq.Node)
+		n := heap.Pop(q).(*coll.Node[v.Point])
 		currPos, currTotal := n.Value, n.Priority*-1
 
 		for _, next := range g.neighbours(currPos) {
@@ -212,8 +212,8 @@ func part2(g grid) int {
 // neighbours returns a slice of all positions within the grid that
 // are adjacent to the given position.
 // Squares are only adjacent vertically and horizontally - not diagonally.
-func (g grid) neighbours(pos twod.Point) []twod.Point {
-	points := make([]twod.Point, 0, 4)
+func (g grid) neighbours(pos v.Point) []v.Point {
+	points := make([]v.Point, 0, 4)
 	for _, p := range pos.Neighbours4() {
 		if _, ok := g.terrain[p]; ok {
 			points = append(points, p)
