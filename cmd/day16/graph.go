@@ -69,3 +69,23 @@ func NewGraph(valves map[ValveID]*Valve) Graph {
 	}
 	return result
 }
+
+// Route finds (one of) the most direct paths from A to B
+// without opening any valves along the way.
+func (g Graph) Route(a, b ValveID) (Route, int) {
+	if a == b {
+		return "", 0
+	}
+	buf := make([]byte, 2*(g[a][b].Dist))
+
+	i := len(buf) - 2
+	for a != b {
+		step := g[a][b]
+		buf[i+1] = byte(b & 0x00FF)
+		buf[i] = byte(b & 0xFF00 >> 8)
+		b = step.Prev
+		i -= 2
+	}
+
+	return Route(buf), len(buf) / 2
+}
