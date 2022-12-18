@@ -1,12 +1,14 @@
 package main
 
 import (
+	"strings"
 	"testing"
 )
 
 const _sample = `>>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>`
 
 func TestPart1(t *testing.T) {
+	t.Skip("not ready yet")
 	t.Parallel()
 
 	got, want := part1(_sample), 3068
@@ -30,6 +32,8 @@ func TestGenerator(t *testing.T) {
 }
 
 func TestMakeShape(t *testing.T) {
+	t.Parallel()
+
 	tt := []struct {
 		name string
 		in   string
@@ -120,6 +124,53 @@ func TestMakeShape(t *testing.T) {
 			got := makeShape(tc.in)
 			if got != tc.want {
 				t.Logf("makeShape(%s) = %v ; want %v", tc.in, got, tc.want)
+				t.Fail()
+			}
+		})
+	}
+}
+
+func TestBoard_WriteTo(t *testing.T) {
+	t.Parallel()
+
+	tt := []struct {
+		name string
+		in   board
+		want string
+	}{
+		{
+			name: "empty board",
+			want: "+-------+",
+		},
+		{
+			name: "board with height 3",
+			in: board{
+				top:  2,
+				rows: make([]row, 3),
+			},
+			want: `|.......|
+|.......|
+|.......|
++-------+`,
+		},
+	}
+
+	for _, tc := range tt {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			var b strings.Builder
+			_, err := tc.in.WriteTo(&b)
+			if err != nil {
+				t.Log(err)
+				t.FailNow()
+			}
+
+			got := b.String()
+			t.Log(got)
+			if got != tc.want {
+				t.Logf("%#v.WriteTo() got\n%q\nwant:\n%q", tc.in, got, tc.want)
 				t.Fail()
 			}
 		})
