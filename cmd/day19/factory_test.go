@@ -13,13 +13,13 @@ func TestParseBlueprint(t *testing.T) {
 		name string
 		in   string
 		want Blueprint
-		cost map[Robot][4]int
+		cost map[Robot][3]int
 	}{
 		{
 			name: "sample row 1",
 			in:   `Blueprint 1: Each ore robot costs 4 ore. Each clay robot costs 2 ore. Each obsidian robot costs 3 ore and 14 clay. Each geode robot costs 2 ore and 7 obsidian.`,
 			want: Blueprint{4, 2, 3, 2, 14, 7},
-			cost: map[Robot][4]int{
+			cost: map[Robot][3]int{
 				Orebot:   {Oremat: 4},
 				Claybot:  {Oremat: 2},
 				Obsbot:   {Oremat: 3, Claymat: 14},

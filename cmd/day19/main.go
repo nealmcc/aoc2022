@@ -31,8 +31,8 @@ func main() {
 	p2 := part2(blueprints)
 	end := time.Now()
 
-	fmt.Printf("part 1: %d in %s\n", p1, middle.Sub(start))
-	fmt.Printf("part 2: %d in %s\n", p2, end.Sub(middle))
+	fmt.Printf("part 1: %d in %s\n", p1, middle.Sub(start)) // 1480
+	fmt.Printf("part 2: %d in %s\n", p2, end.Sub(middle))   // 3168
 }
 
 func part1(blueprints []Blueprint) int {
@@ -66,7 +66,7 @@ func evaluate(bp Blueprint, limit int) int {
 	qFirst := new(pq.Queue[Factory])
 	q := &qFirst
 	start := &pq.Node[Factory]{
-		Value:    Factory{bp: bp, bots: [4]int{1, 0, 0, 0}},
+		Value:    Factory{bp: bp, bots: [4]int{1}},
 		Priority: 0,
 	}
 
@@ -85,7 +85,7 @@ func evaluate(bp Blueprint, limit int) int {
 				// make a copy of the current state
 				f := curr.Value
 				score := f.Tick(Geodebot)
-				upsert(qNext, &best, &pNext, f, score)
+				upsert(qNext, &best, &pNext, f, curr.Priority+score)
 				// building a Geodebot will always be better than any other
 				// options - don't bother evaluating the remaining states
 				continue
@@ -95,7 +95,7 @@ func evaluate(bp Blueprint, limit int) int {
 			if curr.Value.CanAfford(Obsbot) {
 				f := curr.Value
 				score := (&f).Tick(Obsbot)
-				upsert(qNext, &best, &pNext, f, score)
+				upsert(qNext, &best, &pNext, f, curr.Priority+score)
 				// building an obsidian bot will always
 				// be better than building an ore bot or a clay bot,
 				// but *might* not be as good as building nothing. This would
@@ -105,20 +105,20 @@ func evaluate(bp Blueprint, limit int) int {
 				if curr.Value.CanAfford(Claybot) {
 					f := curr.Value
 					score := (&f).Tick(Claybot)
-					upsert(qNext, &best, &pNext, f, score)
+					upsert(qNext, &best, &pNext, f, curr.Priority+score)
 				}
 
 				if curr.Value.CanAfford(Orebot) {
 					f := curr.Value
 					score := (&f).Tick(Orebot)
-					upsert(qNext, &best, &pNext, f, score)
+					upsert(qNext, &best, &pNext, f, curr.Priority+score)
 				}
 			}
 
 			// finally, consider the option of not building anything:
 			f := curr.Value
 			score := (&f).Tick()
-			upsert(qNext, &best, &pNext, f, score)
+			upsert(qNext, &best, &pNext, f, curr.Priority+score)
 		}
 		*q = qNext
 	}

@@ -11,7 +11,7 @@ import (
 type Factory struct {
 	bp   Blueprint
 	bots [4]int
-	mats [4]int
+	mats [3]int // the factory doesn't store the geodes
 }
 
 // CanAfford checks to see if the factory contains enough raw materials to
@@ -25,24 +25,19 @@ func (f Factory) CanAfford(r Robot) bool {
 	return true
 }
 
-// Spend pays the cost of the given robot. The robot isn't completed yet.
-func (f *Factory) Spend(r Robot) {
-	for i, cost := range f.bp.cost(r) {
-		f.mats[i] -= cost
-	}
-}
-
 // Tick completes the current turn for the factory, including sending all bots
-// out to gather materials, returning the new number of cracked geodes,
+// out to gather materials, returning the additional geodes that were produced,
 // and (optionally) adding a robot to the factory afterwards.
 func (f *Factory) Tick(r ...Robot) int {
 	if len(r) > 0 {
-		f.Spend(r[0])
+		for i, cost := range f.bp.cost(r[0]) {
+			f.mats[i] -= cost
+		}
 	}
-	for i, n := range f.bots {
-		(*f).mats[i] += n
+	for i := 0; i < 3; i++ {
+		(*f).mats[i] += f.bots[i]
 	}
-	sc := f.mats[Geodemat]
+	sc := f.bots[Geodebot]
 	if len(r) > 0 {
 		(*f).bots[r[0]] += 1
 	}
@@ -52,8 +47,8 @@ func (f *Factory) Tick(r ...Robot) int {
 // Blueprint defines the material costs for each type of robot.
 type Blueprint [6]byte
 
-func (bp Blueprint) cost(r Robot) [4]int {
-	m := [4]int{int(bp[r])}
+func (bp Blueprint) cost(r Robot) [3]int {
+	m := [3]int{int(bp[r])} // ore
 
 	if r == Obsbot {
 		m[Claymat] = int(bp[r+2])
@@ -112,7 +107,6 @@ const (
 	Oremat Material = iota
 	Claymat
 	Obsmat
-	Geodemat
 )
 
 // String implements fmt.Stringer()
@@ -121,7 +115,6 @@ func (m Material) String() string {
 		"ore",
 		"clay",
 		"obsidian",
-		"geode",
 	}[m]
 }
 
@@ -142,7 +135,7 @@ func (r Robot) String() string {
 	return [...]string{
 		"ore bot",
 		"clay bot",
-		"obsisidan bot",
+		"obsidian bot",
 		"Geode Kracker 9000",
 	}[r]
 }
