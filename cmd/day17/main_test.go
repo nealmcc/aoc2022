@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"os"
 	"strings"
 	"testing"
 )
@@ -8,10 +10,9 @@ import (
 const _sample = `>>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>`
 
 func TestPart1(t *testing.T) {
-	t.Skip("not ready yet")
 	t.Parallel()
-
-	got, want := part1(_sample), 3068
+	ctx := withInterrupt(context.Background())
+	got, want := part1(ctx, _sample, os.Stderr), 3068
 	if got != want {
 		t.Logf("part1() = %d; want %d", got, want)
 		t.Fail()
@@ -37,12 +38,12 @@ func TestMakeShape(t *testing.T) {
 	tt := []struct {
 		name string
 		in   string
-		want shape
+		want Shape
 	}{
 		{
 			name: "empty",
 			in:   ``,
-			want: shape{},
+			want: Shape{},
 		},
 		{
 			name: "all dots",
@@ -59,12 +60,12 @@ func TestMakeShape(t *testing.T) {
 .......
 ......#
 `,
-			want: shape{0, 0, 0, 1},
+			want: Shape{0, 0, 0, 1},
 		},
 		{
 			name: "top left",
 			in:   `x`,
-			want: shape{0x40, 0, 0, 0},
+			want: Shape{0x40, 0, 0, 0},
 		},
 		{
 			name: "all filled",
@@ -72,7 +73,7 @@ func TestMakeShape(t *testing.T) {
 #######
 #######
 #######`,
-			want: shape{0x7F, 0x7F, 0x7F, 0x7F},
+			want: Shape{0x7F, 0x7F, 0x7F, 0x7F},
 		},
 		{
 			name: "dash",
@@ -135,7 +136,7 @@ func TestBoard_WriteTo(t *testing.T) {
 
 	tt := []struct {
 		name string
-		in   board
+		in   Board
 		want string
 	}{
 		{
@@ -144,9 +145,20 @@ func TestBoard_WriteTo(t *testing.T) {
 		},
 		{
 			name: "board with height 3",
-			in: board{
+			in: Board{
 				top:  2,
-				rows: make([]row, 3),
+				rows: make([]Row, 3),
+			},
+			want: `|.......|
+|.......|
+|.......|
++-------+`,
+		},
+		{
+			name: "a board with its first piece placed:",
+			in: Board{
+				top:  2,
+				rows: make([]Row, 3),
 			},
 			want: `|.......|
 |.......|
