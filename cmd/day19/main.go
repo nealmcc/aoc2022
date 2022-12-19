@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"container/heap"
 	"fmt"
 	"io"
@@ -27,31 +28,115 @@ func main() {
 	p1 := part1(blueprints)
 	middle := time.Now()
 
-	// p2 := part2(blueprints)
-	// end := time.Now()
+	p2 := part2(blueprints)
+	end := time.Now()
 
 	fmt.Printf("part 1: %d in %s\n", p1, middle.Sub(start))
-	// fmt.Printf("part 2: %d in %s\n", p2, end.Sub(middle))
+	fmt.Printf("part 2: %d in %s\n", p2, end.Sub(middle))
 }
 
-func part1(bp []blueprint) int {
-	return 0
+func part1(blueprints []Blueprint) int {
+	const limit = 24
+
+	sum := 0
+	for i, bp := range blueprints {
+		score := evaluate(bp, limit)
+		fmt.Printf("Blueprint %d: %d\n", i+1, score)
+		sum += (i + 1) * score
+	}
+
+	return sum
 }
 
-type state struct {
-	pos1       int    // current position
-	pos2       int    // current position of elephant (part 2)
-	openValves uint64 // which valves are currently open, expressed as a bitmask
+func part2(blueprints []Blueprint) int {
+	const limit = 32
+
+	prod := 1
+	for i, bp := range blueprints[:3] {
+		score := evaluate(bp, limit)
+		fmt.Printf("Blueprint %d: %d\n", i+1, score)
+		prod *= score
+	}
+
+	return prod
+}
+
+func evaluate(bp Blueprint, limit int) int {
+	// each round of evaluation uses a new queue.  This is the first.
+	qFirst := new(pq.Queue[Factory])
+	q := &qFirst
+	start := &pq.Node[Factory]{
+		Value:    Factory{bp: bp, bots: [4]int{1, 0, 0, 0}},
+		Priority: 0,
+	}
+
+	best := make(map[Factory]int)
+	heap.Push(*q, start)
+	for t := 1; t <= limit; t++ {
+		fmt.Println(t, (*q).Len())
+		qNext := new(pq.Queue[Factory])
+		pNext := make(map[Factory]*pq.Node[Factory])
+
+		for (*q).Len() > 0 {
+			curr := heap.Pop(*q).(*pq.Node[Factory])
+
+			// any time we can build a geodebot, do so:
+			if curr.Value.CanAfford(Geodebot) {
+				// make a copy of the current state
+				f := curr.Value
+				score := f.Tick(Geodebot)
+				upsert(qNext, &best, &pNext, f, score)
+				// building a Geodebot will always be better than any other
+				// options - don't bother evaluating the remaining states
+				continue
+			}
+
+			// next priority: if we can build an obsidian bot, do do:
+			if curr.Value.CanAfford(Obsbot) {
+				f := curr.Value
+				score := (&f).Tick(Obsbot)
+				upsert(qNext, &best, &pNext, f, score)
+				// building an obsidian bot will always
+				// be better than building an ore bot or a clay bot,
+				// but *might* not be as good as building nothing. This would
+				// only be true if it means we will end the simulation soon,
+				// and would be able to afford a geodebot sooner if we wait
+			} else {
+				if curr.Value.CanAfford(Claybot) {
+					f := curr.Value
+					score := (&f).Tick(Claybot)
+					upsert(qNext, &best, &pNext, f, score)
+				}
+
+				if curr.Value.CanAfford(Orebot) {
+					f := curr.Value
+					score := (&f).Tick(Orebot)
+					upsert(qNext, &best, &pNext, f, score)
+				}
+			}
+
+			// finally, consider the option of not building anything:
+			f := curr.Value
+			score := (&f).Tick()
+			upsert(qNext, &best, &pNext, f, score)
+		}
+		*q = qNext
+	}
+
+	max := 0
+	for k, v := range best {
+		if v > max {
+			fmt.Println("score", v, "state", k)
+			max = v
+		}
+	}
+	return max
 }
 
 // upsert checks to see if the given key, score combination beats what currently exists
 // within the map 'best'. If so, it will either add or update the value in the queue.
 // Performs some optimisations to avoid duplicate state in the queue.
-func upsert(q *pq.Queue[state], best *map[state]int, pointers *map[state]*pq.Node[state], key state, score int) {
-	if key.pos2 != 0 && key.pos1 > key.pos2 {
-		key.pos1, key.pos2 = key.pos2, key.pos1
-	}
-
+func upsert(q *pq.Queue[Factory], best *map[Factory]int, pointers *map[Factory]*pq.Node[Factory], key Factory, score int) {
 	if sc, ok := (*best)[key]; ok && score <= sc {
 		return
 	}
@@ -59,7 +144,7 @@ func upsert(q *pq.Queue[state], best *map[state]int, pointers *map[state]*pq.Nod
 
 	p, ok := (*pointers)[key]
 	if !ok {
-		p = &pq.Node[state]{
+		p = &pq.Node[Factory]{
 			Value:    key,
 			Priority: score,
 		}
@@ -70,6 +155,21 @@ func upsert(q *pq.Queue[state], best *map[state]int, pointers *map[state]*pq.Nod
 	}
 }
 
-func readInput(r io.Reader) ([]blueprint, error) {
-	return nil, nil
+func readInput(r io.Reader) ([]Blueprint, error) {
+	s := bufio.NewScanner(r)
+
+	blueprints := make([]Blueprint, 0, 30)
+	for s.Scan() {
+		bp, err := ParseBlueprint(s.Text())
+		if err != nil {
+			return nil, err
+		}
+		blueprints = append(blueprints, bp)
+	}
+
+	if err := s.Err(); err != nil {
+		return nil, err
+	}
+
+	return blueprints, nil
 }

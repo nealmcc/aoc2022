@@ -12,18 +12,18 @@ func TestParseBlueprint(t *testing.T) {
 	tt := []struct {
 		name string
 		in   string
-		want blueprint
-		cost map[robot]map[material]int
+		want Blueprint
+		cost map[Robot][4]int
 	}{
 		{
 			name: "sample row 1",
 			in:   `Blueprint 1: Each ore robot costs 4 ore. Each clay robot costs 2 ore. Each obsidian robot costs 3 ore and 14 clay. Each geode robot costs 2 ore and 7 obsidian.`,
-			want: blueprint{4, 2, 3, 14, 2, 7},
-			cost: map[robot]map[material]int{
-				OreBot:   {OreMat: 4},
-				ClayBot:  {OreMat: 2},
-				ObsBot:   {OreMat: 3, ClayMat: 14},
-				GeodeBot: {OreMat: 2, ObsMat: 7},
+			want: Blueprint{4, 2, 3, 2, 14, 7},
+			cost: map[Robot][4]int{
+				Orebot:   {Oremat: 4},
+				Claybot:  {Oremat: 2},
+				Obsbot:   {Oremat: 3, Claymat: 14},
+				Geodebot: {Oremat: 2, Obsmat: 7},
 			},
 		},
 	}
@@ -43,7 +43,7 @@ func TestParseBlueprint(t *testing.T) {
 			}
 
 			for bot, want := range tc.cost {
-				got := bp.Cost(bot)
+				got := bp.cost(bot)
 				assert.Equalf(t, want, got, "%s", bot)
 			}
 		})
