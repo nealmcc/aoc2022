@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"os"
 	"strings"
 	"testing"
@@ -11,8 +10,7 @@ const _sample = `>>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>`
 
 func TestPart1(t *testing.T) {
 	t.Parallel()
-	ctx := withInterrupt(context.Background())
-	got, want := part1(ctx, _sample, os.Stderr), 3068
+	got, want := part1(_sample, os.Stderr), 3068
 	if got != want {
 		t.Logf("part1() = %d; want %d", got, want)
 		t.Fail()

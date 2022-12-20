@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -13,8 +12,6 @@ import (
 )
 
 func main() {
-	flag.Parse()
-
 	file, err := os.Open("input.txt")
 	if err != nil {
 		log.Fatal(err)
