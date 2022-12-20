@@ -29,18 +29,29 @@ func main() {
 	p1 := part1(in)
 	middle := time.Now()
 
-	// copy(in, nums)
-	// p2 := part2(in)
-	// end := time.Now()
+	p2 := part2(in)
+	end := time.Now()
 
 	fmt.Printf("part 1: %d in %s\n", p1, middle.Sub(start))
-	// fmt.Printf("part 2: %d in %s\n", p2, end.Sub(middle))
+	fmt.Printf("part 2: %d in %s\n", p2, end.Sub(middle))
 }
 
 // part1 solves part 1
 func part1(nums []int) int {
 	list := NewList(nums, 0)
 	list.Mix()
+	return list.Coordinates()
+}
+
+// part2 solves part 2
+func part2(nums []int) int {
+	for i := range nums {
+		nums[i] *= 811589153
+	}
+	list := NewList(nums, 0)
+	for i := 0; i < 10; i++ {
+		list.Mix()
+	}
 	return list.Coordinates()
 }
 
