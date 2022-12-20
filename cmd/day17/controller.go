@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 )
 
 // Controller is responsible for manipulating the board an notifying
@@ -43,11 +44,11 @@ func (c *Controller) Run(ctx context.Context, maxRocks int) <-chan GameEvent {
 	ch := make(chan GameEvent)
 	c.seq = 0
 
-	// ticker := time.NewTicker(100 * time.Millisecond)
+	ticker := time.NewTicker(100 * time.Millisecond)
 
 	go func() {
 		defer func() {
-			// ticker.Stop()
+			ticker.Stop()
 			close(ch)
 		}()
 
@@ -70,7 +71,7 @@ func (c *Controller) Run(ctx context.Context, maxRocks int) <-chan GameEvent {
 				}
 				return
 
-			default:
+			case <-ticker.C:
 				ev := c.tick()
 				if ev.Type == RockStoppedEvent {
 					c.numRocks++

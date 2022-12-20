@@ -33,29 +33,29 @@ func part1(ctx context.Context, moves string, w io.Writer) int {
 
 	ch := ctrl.Run(ctx, 2022)
 
-	// buf := &Buffer{}
-	// lastRowRendered := 0
+	buf := &Buffer{}
+	lastRowRendered := 0
 
 	numrocks := 0
 	height := 0
 
 	for ev := range ch {
-		// fmt.Fprintf(w, "%+v\n", ev)
-		// fmt.Fprintln(w, lastRowRendered)
+		fmt.Fprintf(w, "%+v\n", ev)
+		fmt.Fprintln(w, lastRowRendered)
 		switch ev.Type {
 		case GameStartedEvent:
-			// fmt.Fprintln(buf, "+-------+")
+			fmt.Fprintln(buf, "+-------+")
 		case NewRockEvent, RockMovedEvent:
-			// if ev.RowsFrom != lastRowRendered {
-			// 	delta := lastRowRendered - ev.RowsFrom
-			// 	fmt.Fprintln(w, "delta", delta)
-			// 	lastRowRendered -= delta
-			// 	buf.Seek(int64(-10*delta), io.SeekEnd)
-			// }
-			// for i := 0; i < len(ev.Rows); i++ {
-			// 	ev.Rows[i].WriteTo(buf)
-			// }
-			// lastRowRendered += len(ev.Rows)
+			if ev.RowsFrom != lastRowRendered {
+				delta := lastRowRendered - ev.RowsFrom
+				fmt.Fprintln(w, "delta", delta)
+				lastRowRendered -= delta
+				buf.Seek(int64(-10*delta), io.SeekEnd)
+			}
+			for i := 0; i < len(ev.Rows); i++ {
+				ev.Rows[i].WriteTo(buf)
+			}
+			lastRowRendered += len(ev.Rows)
 		case RockStoppedEvent:
 			numrocks++
 
@@ -67,9 +67,9 @@ func part1(ctx context.Context, moves string, w io.Writer) int {
 		default:
 			fmt.Fprintf(w, "%+v\n", ev)
 		}
-		// r := buf.Reader()
-		// r.Seek(0, io.SeekStart)
-		// io.Copy(w, r)
+		r := buf.Reader()
+		r.Seek(0, io.SeekStart)
+		io.Copy(w, r)
 	}
 	return height
 }
