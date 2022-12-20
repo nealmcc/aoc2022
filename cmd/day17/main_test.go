@@ -60,12 +60,12 @@ func TestMakeShape(t *testing.T) {
 .......
 ......#
 `,
-			want: Shape{0, 0, 0, 1},
+			want: Shape{1, 0, 0, 0},
 		},
 		{
 			name: "top left",
 			in:   `x`,
-			want: Shape{0x40, 0, 0, 0},
+			want: Shape{0, 0, 0, 0x40},
 		},
 		{
 			name: "all filled",
@@ -146,8 +146,8 @@ func TestBoard_WriteTo(t *testing.T) {
 		{
 			name: "board with height 3",
 			in: Board{
-				top:  2,
-				rows: make([]Row, 3),
+				height: 2,
+				rows:   make([]Row, 3),
 			},
 			want: `|.......|
 |.......|
@@ -157,8 +157,8 @@ func TestBoard_WriteTo(t *testing.T) {
 		{
 			name: "a board with its first piece placed:",
 			in: Board{
-				top:  2,
-				rows: make([]Row, 3),
+				height: 2,
+				rows:   make([]Row, 3),
 			},
 			want: `|.......|
 |.......|

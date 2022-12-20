@@ -31,11 +31,31 @@ func part1(ctx context.Context, moves string, w io.Writer) int {
 	ctrl := NewController(generator(0, []byte(moves)), nil)
 
 	ch := ctrl.Run(ctx, 2022)
+
+	buf := &Buffer{}
+	lastRowRendered := 0
+
 	for ev := range ch {
 		fmt.Fprintf(w, "%+v\n", ev)
-		for _, row := range ev.ChangedRows {
-			row.WriteTo(w)
+		fmt.Fprintln(w, lastRowRendered)
+		switch ev.Type {
+		case GameStartedEvent:
+			fmt.Fprintln(buf, "+-------+")
+		case NewRockEvent, RockMovedEvent, RockStoppedEvent:
+			if ev.RowsFrom != lastRowRendered {
+				delta := lastRowRendered - ev.RowsFrom
+				fmt.Fprintln(w, "delta", delta)
+				lastRowRendered -= delta
+				buf.Seek(int64(-10*delta), io.SeekEnd)
+			}
+			for i := 0; i < len(ev.Rows); i++ {
+				ev.Rows[i].WriteTo(buf)
+			}
+			lastRowRendered += len(ev.Rows)
 		}
+		r := buf.Reader()
+		r.Seek(0, io.SeekStart)
+		io.Copy(w, r)
 	}
 	return 0
 }
