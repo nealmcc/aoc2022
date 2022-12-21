@@ -5,10 +5,10 @@ if [ "$#" -eq 0 ]; then
   exit 1
 fi
 
-for filename in "$@"; do
-	awk '{a[i++]=$0} END {for (j=i-1; j>=0;) print a[j--] }' "$filename" > "$filename".reverse
+for f in "$@"; do
+	awk '{a[i++]=$0} END {for (j=i-1; j>=0;) print a[j--] }' "$f" > "$f".reverse
 done
 
-for filename in *.reverse; do
+for f in *.reverse; do
 	mv "$f" "$(echo "$f" | sed s/\.reverse//)"
 done

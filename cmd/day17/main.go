@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 )
@@ -27,12 +26,11 @@ func main() {
 	start := time.Now()
 	p1 := part1(_movement, os.Stdout)
 	middle := time.Now()
-
-	// p2 := part2(sensors, 4000000)
-	// end := time.Now()
+	p2 := part2(_movement, os.Stdout)
+	end := time.Now()
 
 	fmt.Printf("part 1: %d in %s\n", p1, middle.Sub(start))
-	// fmt.Printf("part 2: %d in %s\n", p2, end.Sub(middle))
+	fmt.Printf("part 2: %d in %s\n", p2, end.Sub(middle))
 }
 
 // part1 solves part 1 of the puzzle
@@ -40,9 +38,9 @@ func part1(moves string, w io.Writer) int {
 	ctrl := NewController(generator(0, []byte(moves)))
 
 	tick := make(chan struct{})
-	defer close(tick)
 
 	go func() {
+		defer close(tick)
 		for {
 			tick <- struct{}{}
 		}
@@ -53,9 +51,54 @@ func part1(moves string, w io.Writer) int {
 	buf := &Buffer{}
 	lastRowRendered := 0
 
-	numrocks := 0
-	height := 0
+	var height int
+	for ev := range ch {
+		switch ev.Type {
 
+		case NewRockEvent, RockMovedEvent:
+			if ev.RowsFrom != lastRowRendered {
+				delta := lastRowRendered - ev.RowsFrom
+				lastRowRendered -= delta
+				buf.Seek(int64(-10*delta), io.SeekEnd)
+			}
+			for i := 0; i < len(ev.Rows); i++ {
+				ev.Rows[i].WriteTo(buf)
+			}
+			lastRowRendered += len(ev.Rows)
+
+		case GameStoppedEvent:
+			height = ev.TotalHeight
+			r := buf.Reader()
+			r.Seek(0, io.SeekStart)
+			save(r, fmt.Sprintf("part1-final-%04d.log", ev.TotalRocks))
+		}
+	}
+	return height
+}
+
+const (
+	_p2_period = 1730 // we get a repeating pattern every 1730 rocks (after about rock 300)
+	_p2_height = 2647 // 2647 height for every 1730 rocks, once the pattern starts
+)
+
+// part2 solves part 2 of the puzzle
+func part2(moves string, w io.Writer) int {
+	ctrl := NewController(generator(0, []byte(moves)))
+
+	tick := make(chan struct{})
+
+	go func() {
+		defer close(tick)
+		for {
+			tick <- struct{}{}
+		}
+	}()
+
+	ch := ctrl.Run(context.Background(), tick, 1000000000000)
+	buf := &Buffer{}
+	lastRowRendered := 0
+
+	var height int
 	for ev := range ch {
 		switch ev.Type {
 
@@ -71,28 +114,24 @@ func part1(moves string, w io.Writer) int {
 			lastRowRendered += len(ev.Rows)
 
 		case RockStoppedEvent:
-			numrocks++
-			fmt.Fprintf(w, "%+v\n", ev)
-			r := buf.Reader()
-			r.Seek(0, io.SeekStart)
-			save(r, fmt.Sprintf("part1-%04d.log", ev.Seq))
+			if ev.TotalRocks%_p2_period == 0 {
+				r := buf.Reader()
+				r.Seek(0, io.SeekStart)
+				save(r, fmt.Sprintf("part2-%06d.log", ev.TotalRocks))
+			}
 
 		case GameStoppedEvent:
-			if ev.Error == nil {
-				height, _ = strconv.Atoi(ev.Msg)
-			}
+			height = ev.TotalHeight
 			r := buf.Reader()
 			r.Seek(0, io.SeekStart)
-			io.Copy(w, r)
-			r.Seek(0, io.SeekStart)
-			save(r, "part1-final.log")
+			save(r, fmt.Sprintf("part2-final-%04d.log", ev.TotalRocks))
 		}
 	}
 	return height
 }
 
 // animate1 animates part 1 of the puzzle
-func animate1(ctx context.Context, moves string, w io.Writer) int {
+func animate1(ctx context.Context, moves string, w io.Writer) {
 	ctrl := NewController(generator(0, []byte(moves)))
 
 	tick := make(chan struct{})
@@ -117,8 +156,6 @@ func animate1(ctx context.Context, moves string, w io.Writer) int {
 	buf := &Buffer{}
 	lastRowRendered := 0
 
-	height := 0
-
 	for ev := range ch {
 		fmt.Fprintf(w, "%+v\n", ev)
 		fmt.Fprintln(w, lastRowRendered)
@@ -138,19 +175,11 @@ func animate1(ctx context.Context, moves string, w io.Writer) int {
 			}
 			lastRowRendered += len(ev.Rows)
 
-		case GameStoppedEvent:
-			if ev.Error == nil {
-				height, _ = strconv.Atoi(ev.Msg)
-			}
-
-		default:
-			fmt.Fprintf(w, "%+v\n", ev)
 		}
 		r := buf.Reader()
 		r.Seek(0, io.SeekStart)
 		io.Copy(w, r)
 	}
-	return height
 }
 
 // withInterrupt wraps the given context, and will cancel it when the user
