@@ -18,26 +18,42 @@ func main() {
 	}
 	defer func() { file.Close() }()
 
-	equation, err := parsetree(file)
+	start := time.Now()
+	tree, err := parsetree(file)
 	if err != nil {
 		log.Fatalf("parse: %d", err)
 	}
 
-	start := time.Now()
-	p1, err := part1(equation, "root")
-	if err != nil {
-		log.Fatal("parse: ", err)
+	var (
+		eq1 = make(map[string][]string, len(tree))
+		eq2 = make(map[string][]string, len(tree))
+	)
+	for k, v := range tree {
+		eq1[k] = v
+		eq2[k] = v
 	}
+
+	p1, err := part1(eq1, "root")
+	if err != nil {
+		log.Fatal("p1: ", err)
+	}
+
 	middle := time.Now()
 
-	// p2 := part2(equation)
-	// end := time.Now()
+	expr := eq2["root"]
+	eq2["root"] = []string{expr[0], "=", expr[2]}
+	p2, _, err := part2(eq2, "root")
+	if err != nil {
+		log.Fatal("p1: ", err)
+	}
+
+	end := time.Now()
 
 	fmt.Printf("part 1: %d in %s\n", p1, middle.Sub(start))
-	// fmt.Printf("part 2: %d in %s\n", p2, end.Sub(middle))
+	fmt.Printf("part 2: \n%v\n in %s\n", p2, end.Sub(middle))
 }
 
-// part1 solves the given equation from the given node
+// part1 solves the given equation from the root node
 func part1(tree map[string][]string, lhs string) (int, error) {
 	rhs, ok := tree[lhs]
 	if !ok {
@@ -77,6 +93,64 @@ func part1(tree map[string][]string, lhs string) (int, error) {
 	}
 
 	return result, nil
+}
+
+// part2 returns the string equation for the human (me) to solve:
+func part2(tree map[string][]string, key string) (string, int, error) {
+	val, ok := tree[key]
+	if !ok {
+		return "", 0, fmt.Errorf("node %s: not found", key)
+	}
+
+	if key == "humn" {
+		return "humn", 0, nil
+	}
+
+	if len(val) == 1 {
+		n, err := strconv.Atoi(val[0])
+		return "", n, err
+	}
+
+	lhs, left, err := part2(tree, val[0])
+	if err != nil {
+		return "", 0, err
+	}
+
+	rhs, right, err := part2(tree, val[2])
+	if err != nil {
+		return "", 0, err
+	}
+
+	if len(lhs)+len(rhs) == 0 {
+		var result int
+		switch val[1] {
+		case "+":
+			result = left + right
+			tree[key] = []string{strconv.Itoa(result)}
+		case "-":
+			result = left - right
+			tree[key] = []string{strconv.Itoa(result)}
+		case "*":
+			result = left * right
+			tree[key] = []string{strconv.Itoa(result)}
+		case "/":
+			result = left / right
+			tree[key] = []string{strconv.Itoa(result)}
+		default:
+			return "", 0, fmt.Errorf("%q: invalid operation %q", key, val[1])
+		}
+		return "", result, nil
+	}
+
+	if len(lhs) > 0 && len(rhs) > 0 {
+		return fmt.Sprintf("(%s %s %s)", lhs, val[1], rhs), 0, nil
+	}
+
+	if len(lhs) > 0 {
+		return fmt.Sprintf("(%s %s %d)", lhs, val[1], right), 0, nil
+	}
+
+	return fmt.Sprintf("(%d %s %s)", left, val[1], rhs), 0, nil
 }
 
 // gvnh: 3
