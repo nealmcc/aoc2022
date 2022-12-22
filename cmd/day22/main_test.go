@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	v "github.com/nealmcc/aoc2022/pkg/vector/twod"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPart1(t *testing.T) {
@@ -29,13 +30,14 @@ func TestPart1(t *testing.T) {
 	}
 }
 
-func TestParseForest_grid(t *testing.T) {
+func TestParseForest(t *testing.T) {
 	tt := []struct {
 		name   string
 		in     string
 		origin v.Point
-		max    v.Point
 		grid   map[v.Point]byte
+		horiz  []Bound
+		vert   []Bound
 	}{
 		{
 			name: "basic 3x3 square forest",
@@ -43,7 +45,16 @@ func TestParseForest_grid(t *testing.T) {
 .##
 ###`,
 			origin: v.Point{X: 0, Y: 0},
-			max:    v.Point{X: 2, Y: 2},
+			horiz: []Bound{
+				{Min: 0, Max: 2},
+				{Min: 0, Max: 2},
+				{Min: 0, Max: 2},
+			},
+			vert: []Bound{
+				{Min: 0, Max: 2},
+				{Min: 0, Max: 2},
+				{Min: 0, Max: 2},
+			},
 			grid: map[v.Point]byte{
 				{X: 0, Y: 0}: '.', {X: 1, Y: 0}: '.', {X: 2, Y: 0}: '#',
 				{X: 0, Y: 1}: '.', {X: 1, Y: 1}: '#', {X: 2, Y: 1}: '#',
@@ -65,7 +76,44 @@ func TestParseForest_grid(t *testing.T) {
 					        .#......
 					        ......#.`,
 			origin: v.Point{X: 8, Y: 0},
-			max:    v.Point{X: 15, Y: 11},
+			horiz: []Bound{
+				// top section
+				{Min: 8, Max: 11},
+				{Min: 8, Max: 11},
+				{Min: 8, Max: 11},
+				{Min: 8, Max: 11},
+				// middle section
+				{Min: 0, Max: 11},
+				{Min: 0, Max: 11},
+				{Min: 0, Max: 11},
+				{Min: 0, Max: 11},
+				// bottom section
+				{Min: 8, Max: 15},
+				{Min: 8, Max: 15},
+				{Min: 8, Max: 15},
+				{Min: 8, Max: 15},
+			},
+			vert: []Bound{
+				// left section
+				{Min: 4, Max: 7},
+				{Min: 4, Max: 7},
+				{Min: 4, Max: 7},
+				{Min: 4, Max: 7},
+				{Min: 4, Max: 7},
+				{Min: 4, Max: 7},
+				{Min: 4, Max: 7},
+				{Min: 4, Max: 7},
+				// middle section
+				{Min: 0, Max: 11},
+				{Min: 0, Max: 11},
+				{Min: 0, Max: 11},
+				{Min: 0, Max: 11},
+				// right section
+				{Min: 8, Max: 11},
+				{Min: 8, Max: 11},
+				{Min: 8, Max: 11},
+				{Min: 8, Max: 11},
+			},
 			grid: map[v.Point]byte{
 				// top section
 				{X: 8, Y: 0}: '.', {X: 9, Y: 0}: '.', {X: 10, Y: 0}: '.', {X: 11, Y: 0}: '#',
@@ -97,15 +145,13 @@ func TestParseForest_grid(t *testing.T) {
 				t.FailNow()
 			}
 
-			if f.origin != tc.origin {
-				t.Logf("got origin = %v; want %v", f.origin, tc.origin)
+			if f.Origin() != tc.origin {
+				t.Logf("got origin = %v; want %v", f.Origin(), tc.origin)
 				t.Fail()
 			}
 
-			if f.max != tc.max {
-				t.Logf("got max = %v; want %v", f.max, tc.max)
-				t.Fail()
-			}
+			assert.Equal(t, tc.horiz, f.boundsHoriz)
+			assert.Equal(t, tc.vert, f.boundsVert)
 
 			for y := 0; y < 24; y++ {
 				for x := 0; x < 24; x++ {

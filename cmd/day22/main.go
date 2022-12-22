@@ -23,7 +23,7 @@ func main() {
 	start := time.Now()
 	forest, path, err := parseInput(file)
 	if err != nil {
-		log.Fatalf("parse: %d", err)
+		log.Fatal(err)
 	}
 
 	p1 := part1(forest, path)
@@ -47,19 +47,30 @@ func main() {
 	// fmt.Printf("part 2: %d in %s\n", p2, end.Sub(middle))
 }
 
-type Forest struct {
-	grid   map[v.Point]byte
-	origin v.Point // the point (x, y) where y = 0, and x is the left-most position
-	max    v.Point // the largest individual values for x and y. Note (x, y) may not be present.
-}
-
-type Step struct {
-	qty int
-	dir byte
-}
-
 func part1(f Forest, path []Step) int {
-	return 0
+	curr := f.Origin()
+	dir := Right
+
+	for _, s := range path {
+		fmt.Printf("standing at %s facing %s\n", curr, dir)
+		if s.Rotation == 0 {
+			fmt.Printf("walking %d\n", s.Dist)
+			next := f.NextPart1(curr, s.Dist, dir)
+			curr = next
+			continue
+		}
+
+		var next Facing
+		if s.Rotation == 'L' {
+			next = ((dir - 1) + 4) % 4
+		} else {
+			next = (dir + 1) % 4
+		}
+		fmt.Printf("turned %c\n", s.Rotation)
+		dir = next
+	}
+	fmt.Printf("standing at %s facing %s\n", curr, dir)
+	return 1000*(curr.Y+1) + 4*(curr.X+1) + int(dir)
 }
 
 func part2(f Forest, path []Step) int {
@@ -73,8 +84,6 @@ func parseInput(r io.Reader) (Forest, []Step, error) {
 		grid: make(map[v.Point]byte, 50*50*6),
 	}
 
-	var foundOrigin bool
-
 	var x, y int
 	for s.Scan() {
 		b := s.Bytes()
@@ -84,19 +93,14 @@ func parseInput(r io.Reader) (Forest, []Step, error) {
 
 		// use separate x and i values so we can align test input with tabs,
 		// and skip the tab character when parsing.
-		x = 0 // coordinate on the grid
+		x = 0
 		for i := 0; i < len(b); i, x = i+1, x+1 {
 			switch b[i] {
 			case '.', '#':
 				f.grid[v.Point{X: x, Y: y}] = b[i]
-				if !foundOrigin {
-					foundOrigin = true
-					f.origin.X = x
+				if x >= f.width {
+					f.width = x + 1
 				}
-				if x > f.max.X {
-					f.max.X = x
-				}
-
 			case ' ':
 				continue
 			case '\t':
@@ -108,7 +112,9 @@ func parseInput(r io.Reader) (Forest, []Step, error) {
 		}
 		y++
 	}
-	f.max.Y = y - 1
+	f.height = y
+
+	f.setBounds()
 
 	s.Scan()
 	if err := s.Err(); err != nil {
@@ -131,10 +137,10 @@ func parsePath(s string) ([]Step, error) {
 	for _, s := range _re.FindAllString(s, -1) {
 		switch s {
 		case "L", "R":
-			path = append(path, Step{dir: s[0]})
+			path = append(path, Step{Rotation: s[0]})
 		default:
 			n, _ := strconv.Atoi(s)
-			path = append(path, Step{qty: n, dir: 'F'})
+			path = append(path, Step{Dist: n})
 		}
 	}
 

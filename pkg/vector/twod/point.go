@@ -102,6 +102,10 @@ func (a Point) Reduce() (Point, int) {
 	}, scale
 }
 
+func (a Point) String() string {
+	return fmt.Sprintf("(%d, %d)", a.X, a.Y)
+}
+
 func ManhattanLength(p Point) int {
 	if p.X < 0 {
 		p.X *= -1
@@ -111,7 +115,6 @@ func ManhattanLength(p Point) int {
 	}
 	return p.X + p.Y
 }
-
 
 // Rot90 returns this vector rotated 90 degrees.
 // With Y up, this is Left. With Y down, this is Light.
