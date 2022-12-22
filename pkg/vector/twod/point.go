@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+
+	"github.com/nealmcc/aoc2022/pkg/vector"
 )
 
 // Point is a 2-dimensional integer coordinate.
@@ -108,6 +110,41 @@ func ManhattanLength(p Point) int {
 		p.Y *= -1
 	}
 	return p.X + p.Y
+}
+
+
+// Rot90 returns this vector rotated 90 degrees.
+// With Y up, this is Left. With Y down, this is Light.
+func (p Point) Rot90() Point {
+	m := vector.Matrix{
+		{0, -1},
+		{1, 0},
+	}
+
+	// express this point as a 2x1 column matrix and then apply the
+	// matrix transformation
+	v, _ := m.Cross(vector.Matrix{
+		{p.X},
+		{p.Y},
+	})
+
+	return Point{X: v[0][0], Y: v[1][0]}
+}
+
+// Rot270 returns this vector rotated by 270 degrees.
+// With Y up, this is Right. With Y down, this is Left.
+func (p Point) Rot270() Point {
+	m := vector.Matrix{
+		{0, 1},
+		{-1, 0},
+	}
+
+	v, _ := m.Cross(vector.Matrix{
+		{p.X},
+		{p.Y},
+	})
+
+	return Point{X: v[0][0], Y: v[1][0]}
 }
 
 // gcd calculates the greatest common divisor of a and b.

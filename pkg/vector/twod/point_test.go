@@ -42,3 +42,101 @@ func TestManhattanLength(t *testing.T) {
 		})
 	}
 }
+
+func TestRot90(t *testing.T) {
+	t.Parallel()
+
+	tt := []struct {
+		name string
+		in   Point
+		want Point
+	}{
+		{
+			name: "0 degrees becomes 90 degrees",
+			in:   Point{X: 1},
+			want: Point{Y: 1},
+		},
+		{
+			name: "90 degrees becomes 180 degrees",
+			in:   Point{Y: 1},
+			want: Point{X: -1},
+		},
+		{
+			name: "180 degrees becomes 270 degrees",
+			in:   Point{X: -1},
+			want: Point{Y: -1},
+		},
+		{
+			name: "270 degrees becomes 0 degrees",
+			in:   Point{Y: -1},
+			want: Point{X: 1},
+		},
+		{
+			name: "Rotating the sum of both unit vectors",
+			in:   Point{X: 1, Y: 1},
+			want: Point{X: -1, Y: 1},
+		},
+	}
+
+	for _, tc := range tt {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := tc.in.Rot90()
+			if got != tc.want {
+				t.Logf("%v.Rot90() = %v ; want %v", tc.in, got, tc.want)
+				t.Fail()
+			}
+		})
+	}
+}
+
+func TestRot270(t *testing.T) {
+	t.Parallel()
+
+	tt := []struct {
+		name string
+		in   Point
+		want Point
+	}{
+		{
+			name: "0 degrees becomes 270 degrees",
+			in:   Point{X: 1},
+			want: Point{Y: -1},
+		},
+		{
+			name: "90 degrees becomes 0 degrees",
+			in:   Point{Y: 1},
+			want: Point{X: 1},
+		},
+		{
+			name: "180 degrees becomes 90 degrees",
+			in:   Point{X: -1},
+			want: Point{Y: 1},
+		},
+		{
+			name: "270 degrees becomes 180 degrees",
+			in:   Point{Y: -1},
+			want: Point{X: -1},
+		},
+		{
+			name: "Rotating the sum of both unit vectors",
+			in:   Point{X: 1, Y: 1},
+			want: Point{X: 1, Y: -1},
+		},
+	}
+
+	for _, tc := range tt {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := tc.in.Rot270()
+			if got != tc.want {
+				t.Logf("%v.Rot270() = %v ; want %v", tc.in, got, tc.want)
+				t.Fail()
+			}
+		})
+	}
+}
