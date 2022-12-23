@@ -9,7 +9,6 @@ import (
 )
 
 func TestPart1(t *testing.T) {
-	t.Skip("not ready")
 	file, err := os.Open("sample.txt")
 	if err != nil {
 		t.Log(err)
@@ -22,10 +21,32 @@ func TestPart1(t *testing.T) {
 		t.FailNow()
 	}
 
-	got, want := part1(forest), 110
+	got, want := part1(&forest), 110
 
 	if got != want {
 		t.Logf("part1(sample) = %d ; want %d", got, want)
+		t.Fail()
+	}
+}
+
+func TestPart2(t *testing.T) {
+	file, err := os.Open("sample.txt")
+	if err != nil {
+		t.Log(err)
+		t.FailNow()
+	}
+
+	forest, err := parseInput(file)
+	if err != nil {
+		t.Log(err)
+		t.FailNow()
+	}
+
+	part1(&forest)
+	got, want := part2(&forest), 20
+
+	if got != want {
+		t.Logf("part2(sample) = %d ; want %d", got, want)
 		t.Fail()
 	}
 }
@@ -39,11 +60,11 @@ func TestParseForest(t *testing.T) {
 	}{
 		{
 			name: "small sample",
-			in: `.....
-..##.
-..#..
-.....
-..##.`,
+			in: `	.....
+					..##.
+					..#..
+					.....
+					..##.`,
 			want: `##
 #.
 ..
@@ -51,13 +72,13 @@ func TestParseForest(t *testing.T) {
 		},
 		{
 			name: "larger sample",
-			in: `....#..
-..###.#
-#...#.#
-.#...##
-#.###..
-##.#.##
-.#..#..`,
+			in: `	....#..
+					..###.#
+					#...#.#
+					.#...##
+					#.###..
+					##.#.##
+					.#..#..`,
 			want: `....#..
 ..###.#
 #...#.#
