@@ -91,11 +91,6 @@ type Bound struct {
 	Max int
 }
 
-// Contains checks to see if this boundary contains the given value.
-func (b Bound) Contains(n int) bool {
-	return b.Min <= n && n <= b.Max
-}
-
 // Len returns the size of this boundary
 func (b Bound) Len() int {
 	return b.Max - b.Min + 1
