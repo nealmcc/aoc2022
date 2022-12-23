@@ -160,3 +160,43 @@ func (f Facing) AsVector() v.Point {
 		{Y: -1},
 	}[f]
 }
+
+type zone int
+
+const (
+	ZOne zone = iota + 1
+	ZTwo
+	ZThree
+	ZFour
+	ZFive
+	ZSix
+)
+
+func (f Forest) wrap2(pos v.Point, dir Facing) (v.Point, Facing) {
+	return pos, dir
+}
+
+// func (f Forest) zoneWrappers(p v.Point) (z Zone, h, v wrapFunc) {
+// 	if p.X >= 100 {
+// 		// zone two, we need a wrapper to move up or left
+// 		h = f.wrapTwoHoriz
+// 		v = f.wrapTwoVert
+// 		return ZTwo, h, v
+// 	}
+// 	if p.Y < 50 {
+// 		return ZOne
+// 	}
+// 	if p.Y >= 150 {
+// 		return ZSix
+// 	}
+// 	if p.X < 50 {
+// 		return ZFour
+// 	}
+// 	if p.Y >= 100 {
+// 		return ZFive
+// 	}
+// 	return ZThree
+// }
+
+// func (f Forest) wrapTwoHoriz(pos, delta v.Point) (v.Point, Facing) {
+// }
