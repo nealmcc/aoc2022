@@ -27,24 +27,13 @@ func main() {
 	}
 
 	p1 := part1(forest, path)
-
 	middle := time.Now()
 
-	// file.Seek(0, io.SeekStart)
-	// tree, err = parsetree(file)
-	// if err != nil {
-	// 	log.Fatal("parse: ", err)
-	// }
-
-	// p2, err := part2(tree)
-	// if err != nil {
-	// 	log.Fatalf("part2: %d", err)
-	// }
-
-	// end := time.Now()
+	p2 := part2(forest, path)
+	end := time.Now()
 
 	fmt.Printf("part 1: %d in %s\n", p1, middle.Sub(start))
-	// fmt.Printf("part 2: %d in %s\n", p2, end.Sub(middle))
+	fmt.Printf("part 2: %d in %s\n", p2, end.Sub(middle))
 }
 
 func part1(f Forest, path []Step) int {
@@ -73,7 +62,28 @@ func part1(f Forest, path []Step) int {
 }
 
 func part2(f Forest, path []Step) int {
-	return 0
+	curr := f.Origin()
+	dir := Right
+
+	for _, s := range path {
+		if s.Rotation == 0 {
+			fmt.Printf("walking %d %s\n", s.Dist, dir)
+			curr, dir = f.Next(curr, s.Dist, dir, f.wrap2)
+			continue
+		}
+
+		var next Facing
+		if s.Rotation == 'L' {
+			next = ((dir - 1) + 4) % 4
+		} else {
+			next = (dir + 1) % 4
+		}
+		dir = next
+		fmt.Printf("turned %c ; standing at %s facing %s\n",
+			s.Rotation, curr, dir)
+	}
+	fmt.Printf("standing at %s facing %s\n", curr, dir)
+	return 1000*(curr.Y+1) + 4*(curr.X+1) + int(dir)
 }
 
 func parseInput(r io.Reader) (Forest, []Step, error) {

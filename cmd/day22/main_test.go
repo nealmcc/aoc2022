@@ -30,28 +30,6 @@ func TestPart1(t *testing.T) {
 	}
 }
 
-func TestPart2(t *testing.T) {
-	t.Skip("not ready")
-	file, err := os.Open("sample.txt")
-	if err != nil {
-		t.Log(err)
-		t.FailNow()
-	}
-
-	forest, path, err := parseInput(file)
-	if err != nil {
-		t.Log(err)
-		t.FailNow()
-	}
-
-	got, want := part2(forest, path), 5031
-
-	if got != want {
-		t.Logf("part2(sample) = %d ; want %d", got, want)
-		t.Fail()
-	}
-}
-
 func TestParseForest(t *testing.T) {
 	tt := []struct {
 		name   string
