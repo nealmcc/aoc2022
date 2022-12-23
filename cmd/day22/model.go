@@ -14,12 +14,6 @@ type Forest struct {
 	boundsVert  []Bound // for each x coordinate, the smallest and largest Y value
 }
 
-// Bound defines a lower and upper bound (inclusive at both ends)
-type Bound struct {
-	Min int
-	Max int
-}
-
 func (f Forest) Origin() v.Point {
 	return v.Point{
 		X: f.boundsHoriz[0].Min,
@@ -27,49 +21,53 @@ func (f Forest) Origin() v.Point {
 	}
 }
 
-// NextPart1 determines the next coordinate in the forest the traveller
-// can get to, based on the given distance and facing.
-func (f *Forest) NextPart1(curr v.Point, dist int, dir Facing) v.Point {
+// wrapFunc is a function that examines the current position and facing,
+// and returns the next position and facing if the traveller were
+// to take that step.  Does not move the traveller.
+type wrapFunc func(pos v.Point, f Facing) (v.Point, Facing)
+
+// Next determines the next coordinate and facing the traveller moves to
+func (f *Forest) Next(curr v.Point, dist int, dir Facing, wrapFn wrapFunc) (v.Point, Facing) {
 	count := 0
 	defer func(prev v.Point) {
-		fmt.Printf("moved %d %s from %v, got to %s\n", count, dir, prev, curr)
+		fmt.Printf("moved %d %s from %v, got to %s facing %s\n",
+			count, dir, prev, curr, dir)
 	}(curr)
 
-	vect := dir.AsVector()
+	var next v.Point
 	for i := 0; i < dist; i++ {
-		next := f.wrap(curr, vect)
-		if square := f.grid[next]; square == '#' {
+		next, dir = wrapFn(curr, dir)
+		if sq := f.grid[next]; sq == '#' {
 			fmt.Println("hit a tree")
-			return curr
+			return curr, dir
 		}
 		curr, count = next, count+1
 	}
-	return curr
+
+	return curr, dir
 }
 
-func (f Forest) wrap(pos, delta v.Point) v.Point {
-	mod := func(a, b int) int {
-		return (a%b + b) % b
-	}
-
+func (f Forest) wrap1(pos v.Point, dir Facing) (v.Point, Facing) {
+	delta := dir.AsVector()
 	next := pos.Add(delta)
-	if delta.Y != 0 {
+
+	isVertical := dir == Up || dir == Down
+
+	if isVertical {
 		bound := f.boundsVert[pos.X]
-		size := bound.Max - bound.Min + 1
-		next.Y = bound.Min + mod(next.Y-bound.Min, size)
+		next.Y = bound.Mod(next.Y)
 		if next != pos.Add(delta) {
-			fmt.Printf("wrap adjusted for vertical bounds at %v moving %v\n", pos, delta)
+			fmt.Printf("wrap1 adjusted for vertical bounds at %v moving %v\n", pos, dir)
 		}
-		return next
+		return next, dir
 	}
 
 	bound := f.boundsHoriz[pos.Y]
-	size := bound.Max - bound.Min + 1
-	next.X = bound.Min + mod(next.X-bound.Min, size)
+	next.X = bound.Mod(next.X)
 	if next != pos.Add(delta) {
-		fmt.Printf("wrap adjusted for horizontal bounds at %v moving %v\n", pos, delta)
+		fmt.Printf("wrap1 adjusted for horizontal bounds at %v moving %v\n", pos, delta)
 	}
-	return next
+	return next, dir
 }
 
 func (f *Forest) setBounds() {
@@ -108,6 +106,27 @@ func (f *Forest) setBounds() {
 			vert.Max = p.Y
 		}
 	}
+}
+
+// Bound defines a lower and upper bound (inclusive at both ends)
+type Bound struct {
+	Min int
+	Max int
+}
+
+// Len returns the size of this boundary
+func (b Bound) Len() int {
+	return b.Max - b.Min + 1
+}
+
+// Mod returns the given value adjusted to fit within this boundary
+func (b Bound) Mod(n int) int {
+	// mod return a mod b.
+	// (% is the remainder operator)
+	mod := func(a, b int) int {
+		return (a%b + b) % b
+	}
+	return b.Min + mod(n-b.Min, b.Len())
 }
 
 type Step struct {

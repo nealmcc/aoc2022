@@ -52,11 +52,9 @@ func part1(f Forest, path []Step) int {
 	dir := Right
 
 	for _, s := range path {
-		fmt.Printf("standing at %s facing %s\n", curr, dir)
 		if s.Rotation == 0 {
-			fmt.Printf("walking %d\n", s.Dist)
-			next := f.NextPart1(curr, s.Dist, dir)
-			curr = next
+			fmt.Printf("walking %d %s\n", s.Dist, dir)
+			curr, dir = f.Next(curr, s.Dist, dir, f.wrap1)
 			continue
 		}
 
@@ -66,8 +64,9 @@ func part1(f Forest, path []Step) int {
 		} else {
 			next = (dir + 1) % 4
 		}
-		fmt.Printf("turned %c\n", s.Rotation)
 		dir = next
+		fmt.Printf("turned %c ; standing at %s facing %s\n",
+			s.Rotation, curr, dir)
 	}
 	fmt.Printf("standing at %s facing %s\n", curr, dir)
 	return 1000*(curr.Y+1) + 4*(curr.X+1) + int(dir)
