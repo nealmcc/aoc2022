@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 
 	"github.com/nealmcc/aoc2022/pkg/bound"
 	v "github.com/nealmcc/aoc2022/pkg/vector/twod"
@@ -17,6 +16,12 @@ type Storm struct {
 // String implements fmt.Stringer.
 // It draws the walls, even though they are not stored within the grid data.
 func (st Storm) String() string {
+	return string(bytes.Join(st.Render(), []byte("\n")))
+}
+
+// Render prepares an output buffer to display this storm.
+// Additional symbols may be added to the buffer using the compose() function.
+func (st Storm) Render() [][]byte {
 	size := st.extents.Size()
 	width := size.X + 2
 	height := size.Y + 2
@@ -35,20 +40,42 @@ func (st Storm) String() string {
 		lines[row] = buf
 	}
 
-	lines[st.entry.Y+1][st.entry.X+1] = '.'
-	lines[st.exit.Y+1][st.exit.X+1] = '.'
+	compose(lines, map[v.Point]byte{
+		{X: st.entry.X + 1, Y: st.entry.Y + 1}: '.',
+		{X: st.exit.X + 1, Y: st.exit.Y + 1}:   '.',
+	})
 
-	// for debugging
-	// meta := fmt.Sprintf("%v, %v\n", st.extents, st.extents.Size())
-	// meta += fmt.Sprintf("%v\n", st.entry)
-	// meta += fmt.Sprintf("%v\n", st.exit)
-	// meta += fmt.Sprintf("%v\n", st.Grid)
+	return lines
+}
 
-	return string(bytes.Join(lines, []byte("\n")))
+// compose adds the given points to the given lines buffer, so that
+// we can add symbols to the displayed storm before converting it to a string.
+//
+// The lines buffer should be in row-major order, with Y increasing downwards.
+func compose(lines [][]byte, points map[v.Point]byte) {
+	for k, char := range points {
+		lines[k.Y][k.X] = char
+	}
+}
+
+// At returns a copy of this storm at time t.
+func (st Storm) At(t int) Storm {
+	storm2 := Storm{
+		extents: st.extents,
+		entry:   st.entry,
+		exit:    st.exit,
+		grid:    make(map[v.Point]Ice, len(st.grid)),
+	}
+
+	for pos := range st.grid {
+		next, _ := st.IceAt(pos, t)
+		storm2.grid[pos] = next
+	}
+	return storm2
 }
 
 // IceAt looks at the given position, at some time t, to determine
-// what ice will be there, if any.
+// what ice will be there.
 // returns false if the point is not within the storm grid.
 func (st Storm) IceAt(pos v.Point, t int) (Ice, bool) {
 	_, ok := st.grid[pos]
@@ -61,7 +88,6 @@ func (st Storm) IceAt(pos v.Point, t int) (Ice, bool) {
 	for _, ice := range [...]Ice{North, East, South, West} {
 		delta := ice.AsVector().Times(-1 * t)
 		p := st.extents.Mod(pos.Add(delta))
-		fmt.Println("looking at", p, "for", ice)
 		incoming := st.grid[p]
 		result |= incoming & ice
 	}

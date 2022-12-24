@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	file, err := os.Open("input.txt")
+	file, err := os.Open("sample2.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -35,6 +35,9 @@ func main() {
 }
 
 func part1(st Storm) int {
+	for t := 0; t <= 18; t++ {
+		fmt.Printf("t: %02d:\n%s\n\n", t, st.At(t))
+	}
 	return 0
 }
 
