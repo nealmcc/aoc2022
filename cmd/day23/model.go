@@ -19,8 +19,8 @@ type Elf struct {
 	v.Point
 }
 
-// Tick processes a full round of tree planting
-// The given directions determine the sequence of directions that the elves will
+// Tick processes a full round of elf diffusion
+// The given facings determine the sequence of directions that the elves will
 // use during this round when looking for a destination.
 func (f *Forest) Tick(dirs [4]Facing) bool {
 	next := make(map[Elf]struct{}, len(f.Grid))
@@ -190,17 +190,12 @@ dirloop:
 }
 
 // Neighbours8 returns the eight points adjacent to this elf.
-func (e Elf) Neighbours8() []v.Point {
-	points := make([]v.Point, 0, 8)
-	for y := -1; y <= 1; y++ {
-		for x := -1; x <= 1; x++ {
-			if x == 0 && y == 0 {
-				continue
-			}
-			points = append(points, e.Add(v.Point{X: x, Y: y}))
-		}
+func (e Elf) Neighbours8() [8]v.Point {
+	return [8]v.Point{
+		e.add(-1, -1), e.add(0, -1), e.add(1, -1),
+		e.add(-1, 0), e.add(1, 0),
+		e.add(-1, 1), e.add(0, 1), e.add(1, 1),
 	}
-	return points
 }
 
 // Adjacent3 returns the three points adjacent to this elf in the given direction
