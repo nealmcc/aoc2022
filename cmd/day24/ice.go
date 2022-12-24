@@ -1,6 +1,10 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	v "github.com/nealmcc/aoc2022/pkg/vector/twod"
+)
 
 // Ice represents the direction(s) of travel for a whirlwind of snow and ice
 // at some location.  There may be multiple bits of ice at the same location.
@@ -38,6 +42,24 @@ func (i Ice) Render() byte {
 // String implements fmt.Stringer.
 func (i Ice) String() string {
 	return string(i.Render())
+}
+
+// AsVector returns the x,y vector that corresponds to one of None, North,
+// East, South or West.  It is not valid to convert any other Ice value to
+// a vector.
+func (i Ice) AsVector() v.Point {
+	return [...]v.Point{
+		{},
+		{Y: -1}, // ^
+		{X: 1},  // >
+		{},      // unused
+		{Y: 1},  // v
+		{},      // unused
+		{},      // unused
+		{},      // unused
+		{X: -1}, // <
+		// the rest are unused
+	}[i]
 }
 
 // ParseIce interprets the given byte as an Ice value.

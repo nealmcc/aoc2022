@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/nealmcc/aoc2022/pkg/bound"
 	v "github.com/nealmcc/aoc2022/pkg/vector/twod"
@@ -44,4 +45,26 @@ func (st Storm) String() string {
 	// meta += fmt.Sprintf("%v\n", st.Grid)
 
 	return string(bytes.Join(lines, []byte("\n")))
+}
+
+// IceAt looks at the given position, at some time t, to determine
+// what ice will be there, if any.
+// returns false if the point is not within the storm grid.
+func (st Storm) IceAt(pos v.Point, t int) (Ice, bool) {
+	_, ok := st.grid[pos]
+	if !ok {
+		return None, false
+	}
+
+	var result Ice
+
+	for _, ice := range [...]Ice{North, East, South, West} {
+		delta := ice.AsVector().Times(-1 * t)
+		p := st.extents.Mod(pos.Add(delta))
+		fmt.Println("looking at", p, "for", ice)
+		incoming := st.grid[p]
+		result |= incoming & ice
+	}
+
+	return result, true
 }
