@@ -2,17 +2,20 @@ package main
 
 import (
 	"bufio"
+	"bytes"
+	"container/heap"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"time"
 
-	"github.com/nealmcc/aoc2022/pkg/vector/twod"
+	pq "github.com/nealmcc/aoc2022/pkg/collection/prioqueue"
+	v "github.com/nealmcc/aoc2022/pkg/vector/twod"
 )
 
 func main() {
-	file, err := os.Open("sample2.txt")
+	file, err := os.Open("input.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -34,11 +37,155 @@ func main() {
 	// fmt.Printf("part 2: %d in %s\n", p2, end.Sub(middle))
 }
 
-func part1(st Storm) int {
-	for t := 0; t <= 18; t++ {
-		fmt.Printf("t: %02d:\n%s\n\n", t, st.At(t))
+// State is a current state of the grid. It combines the current position with
+// the positions of all the ice in the storm.
+//
+// We represent all ice combinations by using some value t that where that value
+// of t will produce the ice combination, when passed to storm.IceAt()
+// This acts as a unique hash of the ice locations.
+type State struct {
+	v.Point     // the position on the grid
+	iceHash int // the set of current positions, identified by t mod lcm
+}
+
+// part1 finds the fewest number of turns to travel through the storm.
+// Uses the A* search algorithm.
+func part1(storm Storm, verbose ...bool) int {
+	debug := len(verbose) > 0 && verbose[0]
+
+	var (
+		size = storm.extents.Size()
+		lcm  = size.X * size.Y / gcd(size.X, size.Y) // constrain the search
+	)
+	if debug {
+		fmt.Println("lcm", lcm)
 	}
-	return 0
+
+	var (
+		cost     = map[State]int{{Point: storm.start}: 0} // known exact costs
+		visited  = make(map[State]bool, 100)              // states we are finished with
+		q        = new(pq.Queue[State])                   // next states to examine
+		pointers = make(map[State]*pq.Node[State])        // pointers to those states
+		path     = make(map[State]State)                  // the previous node
+	)
+
+	heap.Push(q, &pq.Node[State]{
+		Value: State{Point: storm.start},
+	})
+	for q.Len() > 0 {
+		node := heap.Pop(q).(*pq.Node[State])
+		keyCurr := node.Value
+		delete(pointers, keyCurr)
+
+		visited[keyCurr] = true
+		tCurr := cost[keyCurr]
+
+		if debug {
+			fmt.Printf("\n== priority %d ==\n\tarrived at %v from %v at time t=%d\n",
+				node.Priority, keyCurr, path[keyCurr], tCurr)
+
+			buf := storm.At(tCurr).Render()
+			compose(buf, map[v.Point]byte{
+				keyCurr.Add(v.Point{X: 1, Y: 1}): 'E',
+			})
+			fmt.Println(string(bytes.Join(buf, []byte("\n"))))
+		}
+
+		if keyCurr.Point == storm.end {
+			return tCurr
+		}
+
+		for _, move := range [...]Ice{South, East, None, North, West} {
+			posNext, tNext := keyCurr.Add(move.AsVector()), tCurr+1
+
+			if keyCurr.Point != storm.start && posNext == storm.start {
+				// don't bother re-entering the start point after we've left it.
+				continue
+			}
+
+			if debug {
+				fmt.Printf("considering moving %s to %s at t = %d", move, posNext, tNext)
+			}
+
+			ice, ok := storm.IceAt(posNext, tNext)
+			if !ok {
+				if debug {
+					fmt.Println("; out of bounds.")
+				}
+				continue
+			}
+
+			if posNext != storm.start && ice > None {
+				if debug {
+					fmt.Println("; there will be ice.")
+				}
+				continue
+			}
+
+			keyNext := State{
+				Point:   posNext,
+				iceHash: tNext % lcm,
+			}
+
+			if debug {
+				fmt.Printf(";  icehash %d ", keyNext.iceHash)
+			}
+
+			if visited[keyNext] {
+				if debug {
+					fmt.Printf("; we already visited %s with icehash %d\n",
+						keyNext, keyNext.iceHash)
+				}
+				continue
+			}
+
+			bestSoFar, ok := cost[keyNext]
+			if ok {
+				if debug {
+					fmt.Print("; our best option so far for that state is", bestSoFar)
+				}
+				if tNext >= bestSoFar {
+					if debug {
+						fmt.Println("; this not better - skipping.")
+					}
+					continue
+				} else {
+					if debug {
+						fmt.Print("; this is better; ")
+					}
+				}
+			} else {
+				if debug {
+					fmt.Print("; this is a new state for us")
+				}
+			}
+
+			cost[keyNext] = tNext
+			path[keyNext] = keyCurr
+
+			prio := -1 * (tNext + v.ManhattanLength(storm.end.Sub(posNext)))
+			if p, ok := pointers[keyNext]; ok {
+				if debug {
+					fmt.Println("; updating priority to ", prio)
+				}
+				q.Update(p, keyNext, prio)
+			} else {
+				p = &pq.Node[State]{
+					Value:    keyNext,
+					Priority: prio,
+				}
+				if debug {
+					fmt.Println("; adding the state to the queue with priority ", prio)
+				}
+				heap.Push(q, p)
+			}
+		}
+	}
+
+	if debug {
+		fmt.Println("no path found.")
+	}
+	return -1
 }
 
 func part2(st Storm) int {
@@ -49,7 +196,7 @@ func parse(r io.Reader) (Storm, error) {
 	s := bufio.NewScanner(r)
 
 	storm := Storm{
-		grid: make(map[twod.Point]Ice, 25*121),
+		grid: make(map[v.Point]Ice, 25*121),
 	}
 
 	y := -1
@@ -68,12 +215,12 @@ func parse(r io.Reader) (Storm, error) {
 			if err != nil {
 				return Storm{}, fmt.Errorf("line %d: character %d: %w", y+1, i, err)
 			}
-			p := twod.Point{X: x, Y: y}
+			p := v.Point{X: x, Y: y}
 			if y == -1 {
-				storm.entry = p
+				storm.start = p
 			}
 			storm.grid[p] = val
-			storm.exit = p
+			storm.end = p
 		}
 		y++
 	}
@@ -87,4 +234,12 @@ func parse(r io.Reader) (Storm, error) {
 	}
 
 	return storm, nil
+}
+
+// gcd calculates the greatest common divisor of a and b.
+func gcd(a, b int) int {
+	for b != 0 {
+		a, b = b, a%b
+	}
+	return a
 }

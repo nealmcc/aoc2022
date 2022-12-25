@@ -7,7 +7,6 @@ import (
 )
 
 func TestPart1(t *testing.T) {
-	t.Skip("not ready")
 	file, err := os.Open("sample2.txt")
 	if err != nil {
 		t.Log(err)

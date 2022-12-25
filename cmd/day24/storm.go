@@ -8,9 +8,9 @@ import (
 )
 
 type Storm struct {
-	grid        map[v.Point]Ice // a map of the ice at time t = 0
-	extents     bound.Rect      // the rectangle that contains the storm itself
-	entry, exit v.Point         // the entry and exit points
+	grid       map[v.Point]Ice // a map of the ice at time t = 0
+	extents    bound.Rect      // the rectangle that contains the storm itself
+	start, end v.Point         // the entry and exit points
 }
 
 // String implements fmt.Stringer.
@@ -41,8 +41,8 @@ func (st Storm) Render() [][]byte {
 	}
 
 	compose(lines, map[v.Point]byte{
-		{X: st.entry.X + 1, Y: st.entry.Y + 1}: '.',
-		{X: st.exit.X + 1, Y: st.exit.Y + 1}:   '.',
+		{X: st.start.X + 1, Y: st.start.Y + 1}: '.',
+		{X: st.end.X + 1, Y: st.end.Y + 1}:     '.',
 	})
 
 	return lines
@@ -62,8 +62,8 @@ func compose(lines [][]byte, points map[v.Point]byte) {
 func (st Storm) At(t int) Storm {
 	storm2 := Storm{
 		extents: st.extents,
-		entry:   st.entry,
-		exit:    st.exit,
+		start:   st.start,
+		end:     st.end,
 		grid:    make(map[v.Point]Ice, len(st.grid)),
 	}
 
@@ -81,6 +81,10 @@ func (st Storm) IceAt(pos v.Point, t int) (Ice, bool) {
 	_, ok := st.grid[pos]
 	if !ok {
 		return None, false
+	}
+
+	if pos == st.start || pos == st.end {
+		return None, true
 	}
 
 	var result Ice
