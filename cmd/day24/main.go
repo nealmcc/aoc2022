@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"container/heap"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -27,14 +28,20 @@ func main() {
 		log.Fatal(err)
 	}
 
-	p1 := part1(storm)
+	p1, err := part1(storm)
+	if err != nil {
+		log.Fatal(err)
+	}
 	middle := time.Now()
 
-	// p2 := part2(storm)
-	// end := time.Now()
+	p2, err := part2(storm, p1, false)
+	if err != nil {
+		log.Fatal(err)
+	}
+	end := time.Now()
 
 	fmt.Printf("part 1: %d in %s\n", p1, middle.Sub(start))
-	// fmt.Printf("part 2: %d in %s\n", p2, end.Sub(middle))
+	fmt.Printf("part 2: %d in %s\n", p2, end.Sub(middle))
 }
 
 // State is a current state of the grid. It combines the current position with
@@ -50,23 +57,40 @@ type State struct {
 
 // part1 finds the fewest number of turns to travel through the storm.
 // Uses the A* search algorithm.
-func part1(storm Storm, verbose ...bool) int {
+func part1(st Storm) (int, error) {
+	return solve(st, 0)
+}
+
+func part2(st Storm, p1 int, verbose bool) (int, error) {
+	st.start, st.end = st.end, st.start
+	cost, err := solve(st, p1, verbose)
+	if err != nil {
+		return 0, err
+	}
+
+	sum := p1 + cost
+	st.start, st.end = st.end, st.start
+	cost, err = solve(st, sum, verbose)
+	if err != nil {
+		return 0, err
+	}
+	sum += cost
+
+	return sum, nil
+}
+
+func solve(storm Storm, startTime int, verbose ...bool) (int, error) {
 	debug := len(verbose) > 0 && verbose[0]
 
 	var (
-		size = storm.extents.Size()
-		lcm  = size.X * size.Y / gcd(size.X, size.Y) // constrain the search
-	)
-	if debug {
-		fmt.Println("lcm", lcm)
-	}
-
-	var (
-		cost     = map[State]int{{Point: storm.start}: 0} // known exact costs
-		visited  = make(map[State]bool, 100)              // states we are finished with
-		q        = new(pq.Queue[State])                   // next states to examine
-		pointers = make(map[State]*pq.Node[State])        // pointers to those states
-		path     = make(map[State]State)                  // the previous node
+		cost = map[State]int{{
+			Point:   storm.start,
+			iceHash: startTime,
+		}: 0} // known exact costs for each state
+		visited  = make(map[State]bool, 100)       // states we are finished with
+		q        = new(pq.Queue[State])            // next states to examine
+		pointers = make(map[State]*pq.Node[State]) // pointers to those states
+		path     = make(map[State]State)           // the previous node
 	)
 
 	heap.Push(q, &pq.Node[State]{
@@ -78,13 +102,13 @@ func part1(storm Storm, verbose ...bool) int {
 		delete(pointers, keyCurr)
 
 		visited[keyCurr] = true
-		tCurr := cost[keyCurr]
+		costCurr := cost[keyCurr]
 
 		if debug {
-			fmt.Printf("\n== priority %d ==\n\tarrived at %v from %v at time t=%d\n",
-				node.Priority, keyCurr, path[keyCurr], tCurr)
+			fmt.Printf("\n== priority %d ==\n\tarrived at %v from %v at time t=%d (+%d)\n",
+				node.Priority, keyCurr, path[keyCurr], costCurr, startTime)
 
-			buf := storm.At(tCurr).Render()
+			buf := storm.At(startTime + costCurr).Render()
 			compose(buf, map[v.Point]byte{
 				keyCurr.Add(v.Point{X: 1, Y: 1}): 'E',
 			})
@@ -92,11 +116,11 @@ func part1(storm Storm, verbose ...bool) int {
 		}
 
 		if keyCurr.Point == storm.end {
-			return tCurr
+			return cost[keyCurr], nil
 		}
 
 		for _, move := range [...]Ice{South, East, None, North, West} {
-			posNext, tNext := keyCurr.Add(move.AsVector()), tCurr+1
+			posNext, costNext := keyCurr.Add(move.AsVector()), costCurr+1
 
 			if keyCurr.Point != storm.start && posNext == storm.start {
 				// don't bother re-entering the start point after we've left it.
@@ -104,10 +128,10 @@ func part1(storm Storm, verbose ...bool) int {
 			}
 
 			if debug {
-				fmt.Printf("considering moving %s to %s at t = %d", move, posNext, tNext)
+				fmt.Printf("considering moving %s to %s at t = %d", move, posNext, startTime+costNext)
 			}
 
-			ice, ok := storm.IceAt(posNext, tNext)
+			ice, ok := storm.IceAt(posNext, startTime+costNext)
 			if !ok {
 				if debug {
 					fmt.Println("; out of bounds.")
@@ -115,7 +139,7 @@ func part1(storm Storm, verbose ...bool) int {
 				continue
 			}
 
-			if posNext != storm.start && ice > None {
+			if ice > None {
 				if debug {
 					fmt.Println("; there will be ice.")
 				}
@@ -124,11 +148,11 @@ func part1(storm Storm, verbose ...bool) int {
 
 			keyNext := State{
 				Point:   posNext,
-				iceHash: tNext % lcm,
+				iceHash: startTime + costNext,
 			}
 
 			if debug {
-				fmt.Printf(";  icehash %d ", keyNext.iceHash)
+				fmt.Printf("; icehash %d ", keyNext.iceHash)
 			}
 
 			if visited[keyNext] {
@@ -142,9 +166,9 @@ func part1(storm Storm, verbose ...bool) int {
 			bestSoFar, ok := cost[keyNext]
 			if ok {
 				if debug {
-					fmt.Print("; our best option so far for that state is", bestSoFar)
+					fmt.Printf("; costNext: %d vs best found so far: %d", costNext, bestSoFar)
 				}
-				if tNext >= bestSoFar {
+				if costNext >= bestSoFar {
 					if debug {
 						fmt.Println("; this not better - skipping.")
 					}
@@ -160,10 +184,10 @@ func part1(storm Storm, verbose ...bool) int {
 				}
 			}
 
-			cost[keyNext] = tNext
+			cost[keyNext] = costNext
 			path[keyNext] = keyCurr
 
-			prio := -1 * (tNext + v.ManhattanLength(storm.end.Sub(posNext)))
+			prio := -1 * (costNext + v.ManhattanLength(storm.end.Sub(posNext)))
 			if p, ok := pointers[keyNext]; ok {
 				if debug {
 					fmt.Println("; updating priority to ", prio)
@@ -182,14 +206,7 @@ func part1(storm Storm, verbose ...bool) int {
 		}
 	}
 
-	if debug {
-		fmt.Println("no path found.")
-	}
-	return -1
-}
-
-func part2(st Storm) int {
-	return 0
+	return 0, errors.New("no path found")
 }
 
 func parse(r io.Reader) (Storm, error) {
@@ -234,12 +251,4 @@ func parse(r io.Reader) (Storm, error) {
 	}
 
 	return storm, nil
-}
-
-// gcd calculates the greatest common divisor of a and b.
-func gcd(a, b int) int {
-	for b != 0 {
-		a, b = b, a%b
-	}
-	return a
 }

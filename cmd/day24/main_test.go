@@ -19,7 +19,12 @@ func TestPart1(t *testing.T) {
 		t.FailNow()
 	}
 
-	got, want := part1(storm), 18
+	got, err := part1(storm)
+	if err != nil {
+		t.Log(err)
+		t.FailNow()
+	}
+	want := 18
 
 	if got != want {
 		t.Logf("part1(sample2) = %d ; want %d", got, want)
@@ -28,7 +33,6 @@ func TestPart1(t *testing.T) {
 }
 
 func TestPart2(t *testing.T) {
-	t.Skip("not ready")
 	file, err := os.Open("sample2.txt")
 	if err != nil {
 		t.Log(err)
@@ -41,7 +45,12 @@ func TestPart2(t *testing.T) {
 		t.FailNow()
 	}
 
-	got, want := part2(storm), -1
+	got, err := part2(storm, 18, true)
+	if err != nil {
+		t.Log(err)
+		t.FailNow()
+	}
+	want := 54
 
 	if got != want {
 		t.Logf("part2(sample2) = %d ; want %d", got, want)
